@@ -16,12 +16,20 @@ int main(void) {
   // become a daemon
   // ref: http://www.netzmafia.de/skripten/unix/linux-daemon-howto.html
 
-  // pre-spawn threads to handle requests
+  for (;;) { // pretend to be daemon: temp
 
-  // listen to HTTP requests
+    // pre-spawn threads to handle requests
 
-  // look in cache -- using files?
+    // listen to HTTP requests
 
-  // send back HTTP response -- html/js/css/txt, etc. files stored in cache plus
-  // status code
+    // parse HTTP requests -- ref RFC
+
+    // look in cache -- using files?
+
+    // build HTTP response -- ref RFC
+
+    // send back HTTP response -- html/js/css/txt, etc. files stored in cache
+    // plus status code
+
+  } // end for(;;)
 }
