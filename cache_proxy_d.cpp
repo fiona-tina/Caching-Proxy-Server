@@ -14,6 +14,7 @@ int main(void) {
   // server socket -- bind to port (80)?
 
   // become a daemon
+  // ref: http://www.netzmafia.de/skripten/unix/linux-daemon-howto.html
 
   // pre-spawn threads to handle requests
 
