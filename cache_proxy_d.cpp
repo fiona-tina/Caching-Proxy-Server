@@ -3,7 +3,7 @@
  * February 18, 2019
  * Prathikshaa Rangarajan (pr109), Rijish Ganguly (rj???)
  */
-#define HTTP_PORT 80
+#define HTTP_PORT 8000
 #define LISTEN_BACKLOG 1000
 
 #include <cstdio>
@@ -35,7 +35,10 @@ int open_server_socket(char *hostname, char *port) {
   hints.ai_flags = AI_PASSIVE;
 
   status = getaddrinfo(hostname, port, &hints, &addrlist);
-  // if()
+  if (status != 0) {
+
+    printf("error");
+  }
 
   for (rm_it = addrlist; rm_it != NULL; rm_it = rm_it->ai_next) {
     fd = socket(rm_it->ai_family, rm_it->ai_socktype, rm_it->ai_protocol);
@@ -51,10 +54,17 @@ int open_server_socket(char *hostname, char *port) {
 
     // bind
     if (bind(fd, rm_it->ai_addr, rm_it->ai_addrlen) == 0) {
+      printf("bind success.");
       break;
     }
 
+    // bind failed
     close(fd);
+  }
+  if (rm_it == NULL) {
+    // bind failed
+    //    fprintf(stderr, "Error failed to connect ");
+    // exit(EXIT_FAILURE);
   }
 
   if (listen(fd, LISTEN_BACKLOG) == -1) {
@@ -66,75 +76,83 @@ int open_server_socket(char *hostname, char *port) {
 
 int main(void) {
 
+  printf("hello\n");
+
   // server socket -- bind to port (80)?
-  char port[10] = "80";
+  char port[10] = "8000";
   int listener_fd = open_server_socket(NULL, port);
 
   struct sockaddr_storage user_addr;
   socklen_t user_addr_len = sizeof(user_addr);
 
-  int user_fd =
-      accept(listener_fd, (struct sockaddr *)&user_addr, &user_addr_len);
-
-  // recv the HTTP REQ
-  char buffer[512];
-  ssize_t read_id;
-
-  read_id = recv(user_fd, buffer, sizeof(buffer), 0); // MSG_WAITALL
-
-  printf("msg recvd:%s", buffer);
-
   // become a daemon
   // ref: http://www.netzmafia.de/skripten/unix/linux-daemon-howto.html
+  int user_fd =
+      accept(listener_fd, (struct sockaddr *)&user_addr, &user_addr_len);
+  if (user_fd == -1) {
+    perror("Error: failed to accept connection on socket\n");
+    exit(EXIT_FAILURE);
+  }
+
+  printf("connected to client");
 
   for (;;) { // daemon loop
 
-    /* Our process ID and Session ID */
-    pid_t pid, sid;
+    // recv the HTTP REQ
+    char buffer[512];
+    ssize_t read_id;
 
-    /* Fork off the parent process */
-    pid = fork();
-    if (pid < 0) {
-      exit(EXIT_FAILURE);
-    }
-    /* If we got a good PID, then
-       we can exit the parent process. */
-    if (pid > 0) {
-      exit(EXIT_SUCCESS);
-    }
+    read_id = recv(user_fd, buffer, sizeof(buffer), 0); // MSG_WAITALL
+    buffer[read_id] = '\0';
 
-    /* Change the file mode mask */
-    umask(0);
+    printf("msg recvd:%s", buffer);
 
-    /* Open any logs here */
+    // /* Our process ID and Session ID */
+    // pid_t pid, sid;
 
-    /* Create a new SID for the child process */
-    sid = setsid();
-    if (sid < 0) {
-      /* Log the failure */
-      exit(EXIT_FAILURE);
-    }
+    // /* Fork off the parent process */
+    // pid = fork();
+    // if (pid < 0) {
+    //   exit(EXIT_FAILURE);
+    // }
+    // /* If we got a good PID, then
+    //    we can exit the parent process. */
+    // if (pid > 0) {
+    //   exit(EXIT_SUCCESS);
+    // }
 
-    /* Change the current working directory */
-    if ((chdir("/")) < 0) {
-      /* Log the failure */
-      exit(EXIT_FAILURE);
-    }
+    // /* Change the file mode mask */
+    // umask(0);
 
-    /* Close out the standard file descriptors */
-    close(STDIN_FILENO);
-    close(STDOUT_FILENO);
-    close(STDERR_FILENO);
+    // /* Open any logs here */
 
-    /* Daemon-specific initialization goes here */
+    // /* Create a new SID for the child process */
+    // sid = setsid();
+    // if (sid < 0) {
+    //   /* Log the failure */
+    //   exit(EXIT_FAILURE);
+    // }
 
-    /* The Big Loop */
-    while (1) {
-      /* Do some task here ... */
+    // /* Change the current working directory */
+    // if ((chdir("/")) < 0) {
+    //   /* Log the failure */
+    //   exit(EXIT_FAILURE);
+    // }
 
-      sleep(30); /* wait 30 seconds */
-    }
-    exit(EXIT_SUCCESS);
+    // /* Close out the standard file descriptors */
+    // close(STDIN_FILENO);
+    // close(STDOUT_FILENO);
+    // close(STDERR_FILENO);
+
+    // /* Daemon-specific initialization goes here */
+
+    // /* The Big Loop */
+    // while (1) {
+    //   /* Do some task here ... */
+
+    //   sleep(30); /* wait 30 seconds */
+    // }
+    // exit(EXIT_SUCCESS);
 
     // pre-spawn threads to handle requests
 
