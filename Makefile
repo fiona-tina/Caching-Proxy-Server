@@ -6,7 +6,7 @@ CCFLAGS=-ggdb3 -Wall -Werror -pedantic
 
 all: $(TARGETS)
 
-cache_proxy_d:
+cache_proxy_d: cache_proxy_d.cpp
 	$(CC) $(CCFLAGS) -o $@ $<
 
 clean:
