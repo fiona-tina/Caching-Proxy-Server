@@ -100,12 +100,15 @@ int main(void) {
 
     // recv the HTTP REQ
     char buffer[512];
+    memset(&buffer, 0, sizeof buffer);
+
     ssize_t read_id;
 
     read_id = recv(user_fd, buffer, sizeof(buffer), 0); // MSG_WAITALL
     buffer[read_id] = '\0';
 
     printf("msg recvd:%s", buffer);
+    send(user_fd, buffer, sizeof buffer, 0);
 
     // /* Our process ID and Session ID */
     // pid_t pid, sid;
