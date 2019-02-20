@@ -16,7 +16,7 @@ int main(void) {
   // become a daemon
   // ref: http://www.netzmafia.de/skripten/unix/linux-daemon-howto.html
 
-  for (;;) { // pretend to be daemon: temp
+  for (;;) { // daemon loop
 
     // pre-spawn threads to handle requests
 
