@@ -1,4 +1,5 @@
-Caching Web Proxy Server 
+Caching Web Proxy Server
+========================
 
 **Language**: C++  
 
@@ -31,3 +32,10 @@ Caching Web Proxy Server
 * Branch 3:
 -- Use the Branch 2 proxy server to build the cache model:
    Step 1: Just save the reponses as files pointed to by a Hash map
+
+## References
+https://medium.com/from-the-scratch/http-server-what-do-you-need-to-know-to-build-a-simple-http-server-from-scratch-d1ef8945e4fa
+https://jameshfisher.com/2016/12/20/http-hello-world.html
+https://www.i-programmer.info/programming/cc/9993-c-sockets-no-need-for-a-web-server.html
+https://stackoverflow.com/questions/176409/build-a-simple-http-server-in-c
+https://github.com/LambdaSchool/C-Web-Server/blob/master/guides/lrucache.md
