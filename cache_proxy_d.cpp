@@ -3,7 +3,7 @@
  * February 18, 2019
  * Prathikshaa Rangarajan (pr109), Rijish Ganguly (rj???)
  */
-#define HTTP_PORT 8000
+#define HTTP_PORT "8000"
 #define LISTEN_BACKLOG 1000
 
 #include <cstdio>
@@ -36,8 +36,8 @@ int open_server_socket(char *hostname, char *port) {
 
   status = getaddrinfo(hostname, port, &hints, &addrlist);
   if (status != 0) {
-
-    printf("error");
+    perror("getaddrinfo:");
+    return -1;
   }
 
   for (rm_it = addrlist; rm_it != NULL; rm_it = rm_it->ai_next) {
@@ -49,12 +49,13 @@ int open_server_socket(char *hostname, char *port) {
 
     int yes = 1;
     if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
-      exit(EXIT_FAILURE);
+      perror("setsockopt:");
+      return -1;
     }
 
     // bind
     if (bind(fd, rm_it->ai_addr, rm_it->ai_addrlen) == 0) {
-      printf("bind success.");
+      printf("bind success."); // remove
       break;
     }
 
@@ -63,23 +64,27 @@ int open_server_socket(char *hostname, char *port) {
   }
   if (rm_it == NULL) {
     // bind failed
-    //    fprintf(stderr, "Error failed to connect ");
+    fprintf(stderr, "Error: socket bind failed\n");
+    return -1;
     // exit(EXIT_FAILURE);
   }
 
   if (listen(fd, LISTEN_BACKLOG) == -1) {
-    perror("ERROR");
+    perror("listen:");
+    return -1;
   }
+
+  freeaddrinfo(addrlist);
 
   return fd;
 }
 
 int main(void) {
 
-  printf("hello\n");
+  printf("hello! now in main\n\n"); // remove
 
   // server socket -- bind to port (80)?
-  char port[10] = "8000";
+  char port[10] = HTTP_PORT;
   int listener_fd = open_server_socket(NULL, port);
 
   struct sockaddr_storage user_addr;
@@ -96,7 +101,51 @@ int main(void) {
 
   printf("connected to client");
 
+  // /* Our process ID and Session ID */
+  // pid_t pid, sid;
+
+  // /* Fork off the parent process */
+  // pid = fork();
+  // if (pid < 0) {
+  //   exit(EXIT_FAILURE);
+  // }
+  // /* If we got a good PID, then
+  //    we can exit the parent process. */
+  // if (pid > 0) {
+  //   exit(EXIT_SUCCESS);
+  // }
+
+  // /* Change the file mode mask */
+  // umask(0);
+
+  // /* Open any logs here */
+
+  // /* Create a new SID for the child process */
+  // sid = setsid();
+  // if (sid < 0) {
+  //   /* Log the failure */
+  //   exit(EXIT_FAILURE);
+  // }
+
+  // /* Change the current working directory */
+  // if ((chdir("/")) < 0) {
+  //   /* Log the failure */
+  //   exit(EXIT_FAILURE);
+  // }
+
+  // /* Close out the standard file descriptors */
+  // close(STDIN_FILENO);
+  // close(STDOUT_FILENO);
+  // close(STDERR_FILENO);
+
+  // /* Daemon-specific initialization goes here */
+
+  /* The Big Loop */
   for (;;) { // daemon loop
+
+    // accept connection here
+
+    // spawn thread to handle request from user_fd
 
     // recv the HTTP REQ
     char buffer[512];
@@ -109,53 +158,6 @@ int main(void) {
 
     printf("msg recvd:%s", buffer);
     send(user_fd, buffer, sizeof buffer, 0);
-
-    // /* Our process ID and Session ID */
-    // pid_t pid, sid;
-
-    // /* Fork off the parent process */
-    // pid = fork();
-    // if (pid < 0) {
-    //   exit(EXIT_FAILURE);
-    // }
-    // /* If we got a good PID, then
-    //    we can exit the parent process. */
-    // if (pid > 0) {
-    //   exit(EXIT_SUCCESS);
-    // }
-
-    // /* Change the file mode mask */
-    // umask(0);
-
-    // /* Open any logs here */
-
-    // /* Create a new SID for the child process */
-    // sid = setsid();
-    // if (sid < 0) {
-    //   /* Log the failure */
-    //   exit(EXIT_FAILURE);
-    // }
-
-    // /* Change the current working directory */
-    // if ((chdir("/")) < 0) {
-    //   /* Log the failure */
-    //   exit(EXIT_FAILURE);
-    // }
-
-    // /* Close out the standard file descriptors */
-    // close(STDIN_FILENO);
-    // close(STDOUT_FILENO);
-    // close(STDERR_FILENO);
-
-    // /* Daemon-specific initialization goes here */
-
-    // /* The Big Loop */
-    // while (1) {
-    //   /* Do some task here ... */
-
-    //   sleep(30); /* wait 30 seconds */
-    // }
-    // exit(EXIT_SUCCESS);
 
     // pre-spawn threads to handle requests
 
@@ -170,5 +172,8 @@ int main(void) {
     // send back HTTP response -- html/js/css/txt, etc. files stored in cache
     // plus status code
 
+    // sleep(30); /* wait 30 seconds */
   } // end for(;;)
+
+  return EXIT_SUCCESS;
 }
