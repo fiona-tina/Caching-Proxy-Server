@@ -84,6 +84,7 @@ int open_server_socket(char *hostname, char *port) {
 }
 
 int open_client_socket(const char *hostname, const char * port) {
+  cout << hostname << " " << port << endl;
   int fd;
   int status;
   struct addrinfo hints;
@@ -102,7 +103,7 @@ int open_client_socket(const char *hostname, const char * port) {
 
   for (rm_it = addrlist; rm_it != NULL; rm_it = rm_it->ai_next) {
     fd = socket(rm_it->ai_family, rm_it->ai_socktype, rm_it->ai_protocol);
-
+    //cout << rm_it->ai_addr << endl;
     if (fd == -1) {
       continue;
     }
@@ -113,15 +114,15 @@ int open_client_socket(const char *hostname, const char * port) {
       return -1;
     }
 
-    if (connect(fd, rm_it->ai_addr, rm_it->ai_addrlen) == -1) {
-      close(fd);
-      perror("client: connect");
-      continue;
+    if (connect(fd, rm_it->ai_addr, rm_it->ai_addrlen) != -1) {
+      //close(fd);
+      //perror("client: connect");
+      break;
     }
-
     // bind failed
     close(fd);
   }
+
   if (rm_it == NULL) {
     // bind failed
     fprintf(stderr, "Error: connect failed\n");
@@ -136,9 +137,17 @@ int open_client_socket(const char *hostname, const char * port) {
 
 int forward_request(const char * hostname, const char * port, const char * request){
   int serverfd = open_client_socket(hostname,port);
-  send(serverfd,request,sizeof request, 0);//while loop to send everything
-  char buffer[512];
-  recv(serverfd, buffer, sizeof buffer, 0);//while loop to receive everything
+  cout << "client connection successful attempting to send #bytes : " << strlen(request) << " " << request <<   endl;
+  int num_to_send = strlen(request);
+  while(num_to_send > 0){
+    cout << "bytes left to send : " << num_to_send <<  endl;
+    int num_sent = send(serverfd,request,num_to_send, 0);//while loop to send everything
+    request += num_sent;
+    num_to_send -= num_sent;
+  }
+  char buffer[2048];
+  recv(serverfd, buffer, sizeof buffer, MSG_WAITALL);//while loop to receive everything
+  cout << "receive successful" << endl;
   //error checking
   cout << buffer << endl;
   return serverfd;
@@ -235,9 +244,10 @@ int main(void) {
     
     // send back HTTP response -- html/js/css/txt, etc. files stored in cache
     // plus status code
-    string host = "google.com";
+    string host = "172.217.7.228";
     string port = "80";
-    int hostfd = forward_request(host.c_str(), port.c_str(), buffer);
+    string request = "GET / HTTP/1.1\r\nHost: www.google.com\r\n\r\n";
+    int hostfd = forward_request(host.c_str(), port.c_str(), request.c_str());
     cout << hostfd << endl;
     // sleep(30); /* wait 30 seconds */
   } // end for(;;)
