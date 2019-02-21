@@ -1,5 +1,5 @@
 TARGETS=proxy_daemon
-CC=gcc
+CC=g++
 CCFLAGS=-ggdb3 -Wall -Werror -pedantic
 
 .PHONY: all clean clobber

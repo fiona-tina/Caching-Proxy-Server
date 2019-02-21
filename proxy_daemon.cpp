@@ -9,6 +9,9 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include <iostream>
+
+
 #include <errno.h>
 #include <fcntl.h>
 #include <netdb.h>
@@ -21,6 +24,7 @@
 #include <syslog.h>
 #include <unistd.h>
 
+using namespace std;
 // need to use boost libraries -- see how/why
 
 int open_server_socket(char *hostname, char *port) {
@@ -77,6 +81,67 @@ int open_server_socket(char *hostname, char *port) {
   freeaddrinfo(addrlist);
 
   return fd;
+}
+
+int open_client_socket(const char *hostname, const char * port) {
+  int fd;
+  int status;
+  struct addrinfo hints;
+  struct addrinfo *addrlist, *rm_it;
+
+  memset(&hints, 0, sizeof(hints));
+  hints.ai_family = AF_UNSPEC;
+  hints.ai_socktype = SOCK_STREAM;
+  hints.ai_flags = AI_PASSIVE;
+
+  status = getaddrinfo(hostname, port, &hints, &addrlist);
+  if (status != 0) {
+    perror("getaddrinfo:");
+    return -1;
+  }
+
+  for (rm_it = addrlist; rm_it != NULL; rm_it = rm_it->ai_next) {
+    fd = socket(rm_it->ai_family, rm_it->ai_socktype, rm_it->ai_protocol);
+
+    if (fd == -1) {
+      continue;
+    }
+
+    int yes = 1;
+    if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
+      perror("setsockopt:");
+      return -1;
+    }
+
+    if (connect(fd, rm_it->ai_addr, rm_it->ai_addrlen) == -1) {
+      close(fd);
+      perror("client: connect");
+      continue;
+    }
+
+    // bind failed
+    close(fd);
+  }
+  if (rm_it == NULL) {
+    // bind failed
+    fprintf(stderr, "Error: connect failed\n");
+    return -1;
+    // exit(EXIT_FAILURE);
+  }
+
+  freeaddrinfo(addrlist);
+
+  return fd;
+}
+
+int forward_request(const char * hostname, const char * port, const char * request){
+  int serverfd = open_client_socket(hostname,port);
+  send(serverfd,request,sizeof request, 0);//while loop to send everything
+  char buffer[512];
+  recv(serverfd, buffer, sizeof buffer, 0);//while loop to receive everything
+  //error checking
+  cout << buffer << endl;
+  return serverfd;
 }
 
 int main(void) {
@@ -155,7 +220,6 @@ int main(void) {
 
     read_id = recv(user_fd, buffer, sizeof(buffer), 0); // MSG_WAITALL
     buffer[read_id] = '\0';
-
     printf("msg recvd:%s", buffer);
     send(user_fd, buffer, sizeof buffer, 0);
 
@@ -168,10 +232,13 @@ int main(void) {
     // look in cache -- using files?
 
     // build HTTP response -- ref RFC
-
+    
     // send back HTTP response -- html/js/css/txt, etc. files stored in cache
     // plus status code
-
+    string host = "google.com";
+    string port = "80";
+    int hostfd = forward_request(host.c_str(), port.c_str(), buffer);
+    cout << hostfd << endl;
     // sleep(30); /* wait 30 seconds */
   } // end for(;;)
 
