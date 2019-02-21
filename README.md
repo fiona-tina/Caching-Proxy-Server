@@ -1,4 +1,13 @@
-# Caching Web Proxy Server in C++
+Caching Web Proxy Server 
+
+**Language**: C++
+
+**Developers**:
+---------------
+ 1. Prathikshaa Rangarajan  
+ 2. Rijish Ganguly   
+ 3. David Laub  
+
 
 ## Current Progress:
 * Listen on a socket for incoming requests
@@ -22,4 +31,3 @@
 * Branch 3:
 -- Use the Branch 2 proxy server to build the cache model:
    Step 1: Just save the reponses as files pointed to by a Hash map
-   

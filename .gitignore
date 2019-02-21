@@ -12,3 +12,4 @@
 # Ignore files with extension `.class` & emacs backups
 *.class
 *~
+*.o
