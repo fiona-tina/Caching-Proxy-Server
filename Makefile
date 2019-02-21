@@ -1,4 +1,4 @@
-TARGETS=cache_proxy_d
+TARGETS=proxy_daemon
 CC=gcc
 CCFLAGS=-ggdb3 -Wall -Werror -pedantic
 
@@ -6,7 +6,7 @@ CCFLAGS=-ggdb3 -Wall -Werror -pedantic
 
 all: $(TARGETS)
 
-cache_proxy_d: cache_proxy_d.cpp
+cache_proxy_d: proxy_daemon.cpp
 	$(CC) $(CCFLAGS) -o $@ $<
 
 clean:
