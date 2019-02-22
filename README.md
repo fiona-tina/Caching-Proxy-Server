@@ -20,6 +20,8 @@ Caching Web Proxy Server
 
 * Put the incoming requests into a log file.
 
+* Use vector<char> instead of strings as HTTP responses may contain any type of content-encoding, e.g. g-zip which uses '\0' as part of data and not as a terminator.
+
 * Branch 1: Uncomment Daemon code and multi-threading
 --  place accept inside the loop -- span a new thread for every new fd
 
