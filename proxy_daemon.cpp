@@ -275,6 +275,9 @@ int main(void) {
     string port = "80";
     string request = "GET / HTTP/1.1\r\nHost: google.com\r\n\r\n";
     cout << request << endl;
+
+    // cache lookup
+
     std::vector<char> response =
         forward_request(host.c_str(), port.c_str(), request.c_str());
     std::string resp_str(response.begin(), response.end());
@@ -283,6 +286,8 @@ int main(void) {
 
     // adding to cache
     s_cache.insert(request, response);
+    cout << "in cache" << endl;
+    s_cache.print();
 
     send(user_fd, resp_str.c_str(), resp_str.length(), 0);
     // sleep(30); /* wait 30 seconds */

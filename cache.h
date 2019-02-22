@@ -1,35 +1,34 @@
 #ifndef _CACHE_H
 #define _CACHE_H
-#include <iostream>
 #include <cstdio>
 #include <cstdlib>
-#include <iostream>
 #include <cstring>
 #include <errno.h>
 #include <fcntl.h>
+#include <iostream>
 #include <netdb.h>
+#include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string>
 #include <unordered_map>
 #include <vector>
-#include <sstream>
-#include <string>
 
 #endif
 
 using namespace std;
 
-typedef std::unordered_map<string, std::vector<char> > map;
+typedef std::unordered_map<string, std::vector<char>> map;
 
-class Cache{
+class Cache {
 
 public:
-  //vector <char> req;
-  //vector <char> resource_name;
+  // vector <char> req;
+  // vector <char> resource_name;
   map my_cache;
-  map expiration_cache; 
+  map expiration_cache;
   string MRU;
-  size_t  size;
+  size_t size;
   size_t max_size;
   void print(void);
   int insert(string key, vector<char> val);
@@ -38,30 +37,29 @@ public:
   vector<char> lookup(string key);
   int update();
 
- Cache(int max_size): size(0), max_size(max_size){};
- Cache(): size(0), max_size(4){};
+  Cache(int max_size) : size(0), max_size(max_size){};
+  Cache() : size(0), max_size(4){};
   ~Cache(){};
-
 };
 
-void print_vec(const vector<char> & vec){
-  for (auto x: vec) {
-    cout << x ;
+void print_vec(const vector<char> &vec) {
+  for (auto x : vec) {
+    cout << x;
   }
   cout << endl;
 }
 
-void Cache::print(void){
+void Cache::print(void) {
   for (auto it : this->my_cache) {
-    cout << " " << it.first << ":" ;
+    cout << " " << it.first << ":";
     print_vec(it.second);
     cout << endl;
   }
   return;
 }
 
-int Cache::insert(string key, vector<char> val){
-  if(this->size == this->max_size){
+int Cache::insert(string key, vector<char> val) {
+  if (this->size == this->max_size) {
     evictNMRU();
   }
   this->my_cache[key] = val;
@@ -70,9 +68,9 @@ int Cache::insert(string key, vector<char> val){
   return 1;
 }
 
-int Cache::evictNMRU(void){
+int Cache::evictNMRU(void) {
   for (auto it : this->my_cache) {
-    if(it.first != this->MRU){
+    if (it.first != this->MRU) {
       this->my_cache.erase(it.first);
       break;
     }
@@ -81,26 +79,27 @@ int Cache::evictNMRU(void){
   return 1;
 }
 
-int Cache::evict(string key){
+int Cache::evict(string key) {
   for (auto it : this->my_cache) {
-    if(key == it.first){
+    if (key == it.first) {
       this->my_cache.erase(it.first);
       break;
     }
   }
-  if(this->MRU == key){
+  if (this->MRU == key) {
     this->MRU = this->my_cache.begin()->first;
   }
   this->size--;
   return 1;
 }
- 
-vector<char> Cache::lookup(string key){
+
+vector<char> Cache::lookup(string key) {
+  // return error if not found
+  if (this->my_cache.find(key) == this->my_cache.end()) {
+    vector<char> fail;
+    return fail; // return ERROR
+  }
   return this->my_cache[key];
 }
 
-
-int Cache::update(){
-  return 1;
-}
-
+int Cache::update() { return 1; }
