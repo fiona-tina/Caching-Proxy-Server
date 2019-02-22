@@ -10,7 +10,7 @@
 #include <cstdlib>
 
 #include <iostream>
-
+#include <vector>
 
 #include <errno.h>
 #include <fcntl.h>
@@ -23,6 +23,7 @@
 #include <sys/types.h>
 #include <syslog.h>
 #include <unistd.h>
+#include "cache.h"
 
 using namespace std;
 // need to use boost libraries -- see how/why
@@ -58,7 +59,9 @@ int open_server_socket(char *hostname, char *port) {
     }
 
     // bind
-    if (bind(fd, rm_it->ai_addr, rm_it->ai_addrlen) == 0) {
+    int status = ::bind(fd, rm_it->ai_addr, rm_it->ai_addrlen);
+
+    if (status == 0) {
       printf("bind success."); // remove
       break;
     }
@@ -135,7 +138,8 @@ int open_client_socket(const char *hostname, const char * port) {
   return fd;
 }
 
-int forward_request(const char * hostname, const char * port, const char * request){
+
+std::vector<char> forward_request(const char * hostname, const char * port, const char * request){
   int serverfd = open_client_socket(hostname,port);
   cout << "client connection successful attempting to send #bytes : " << strlen(request) << " " << request <<   endl;
   int num_to_send = strlen(request);
@@ -145,12 +149,32 @@ int forward_request(const char * hostname, const char * port, const char * reque
     request += num_sent;
     num_to_send -= num_sent;
   }
-  char buffer[2048];
-  recv(serverfd, buffer, sizeof buffer, MSG_WAITALL);//while loop to receive everything
+  char buffer[1];
+  std::vector<char> response;
+  size_t line_break_count = 0;
+  while(1){
+    // print_vec(response);
+    recv(serverfd, buffer, 1, MSG_WAITALL);//while loop to receive everything
+    response.push_back(buffer[0]);
+    if(buffer[0] == '\n'){
+      //cout << "newline" << endl;
+      //print_vec(response);
+      string str(response.end()-4, response.end());
+      //cout << "\"" << str << "\"" << endl;
+      //break;
+      if(str == "\r\n\r\n") {
+	if(line_break_count == 0){
+	  break;
+	}
+	line_break_count++;
+      }
+    }
+  }
   cout << "receive successful" << endl;
   //error checking
-  cout << buffer << endl;
-  return serverfd;
+  //print_vec(response);
+  //  cout << response << endl;
+  return response;
 }
 
 int main(void) {
@@ -230,7 +254,7 @@ int main(void) {
     read_id = recv(user_fd, buffer, sizeof(buffer), 0); // MSG_WAITALL
     buffer[read_id] = '\0';
     printf("msg recvd:%s", buffer);
-    send(user_fd, buffer, sizeof buffer, 0);
+    //    send(user_fd, buffer, sizeof buffer, 0);
 
     // pre-spawn threads to handle requests
 
@@ -244,11 +268,15 @@ int main(void) {
     
     // send back HTTP response -- html/js/css/txt, etc. files stored in cache
     // plus status code
-    string host = "172.217.7.228";
+    string host = "www.google.com";
     string port = "80";
-    string request = "GET / HTTP/1.1\r\nHost: www.google.com\r\n\r\n";
-    int hostfd = forward_request(host.c_str(), port.c_str(), request.c_str());
-    cout << hostfd << endl;
+    string request = "GET / HTTP/1.1\r\nHost: google.com\r\n\r\n";
+    cout << request << endl;
+    std::vector<char> response = forward_request(host.c_str(), port.c_str(), request.c_str());
+    std::string resp_str(response.begin(),response.end());
+    print_vec(response);
+    //cout << response << endl;
+    send(user_fd, resp_str.c_str(), resp_str.length(), 0);
     // sleep(30); /* wait 30 seconds */
   } // end for(;;)
 

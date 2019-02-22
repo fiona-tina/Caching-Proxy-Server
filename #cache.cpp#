@@ -1,11 +1,6 @@
 
 
-void print_vec(const vector<char> & vec){
-  for (auto x: vec) {
-    cout << x ;
-  }
-  cout << endl;
-}
+
 
 void Cache::print(void){
   for (auto it : this->my_cache) {

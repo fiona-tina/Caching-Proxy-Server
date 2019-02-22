@@ -35,6 +35,15 @@ Caching Web Proxy Server
 -- Use the Branch 2 proxy server to build the cache model:
    Step 1: Just save the reponses as files pointed to by a Hash map
 
+## Response Parsing
+*Parser should search for below and let us know if a message body exists.*
+
+Yes, the proxy should handle chunked transfers in any case where the transfer encoding field indicates "chunked"
+Here's a good overview of chunked transfers (why they're very useful, and an example):
+https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Transfer-Encoding
+Also, section 4.1 of RFC 7230 describes how to handle chunked transfers (including pseudo-code for decoding a chunked transfer).
+_Source:_ https://piazza.com/class/jqkchrj2t002u4?cid=156
+
 ## References
 https://medium.com/from-the-scratch/http-server-what-do-you-need-to-know-to-build-a-simple-http-server-from-scratch-d1ef8945e4fa  
 https://jameshfisher.com/2016/12/20/http-hello-world.html  
