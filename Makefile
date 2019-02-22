@@ -13,7 +13,7 @@ cache: cache.cpp cache.h
 	$(CC) $(CCFLAGS) -o $@ $<
 
 clean:
-	rm -f *~ $(TARGETS)
+	rm -rf *~ $(TARGETS) *.dSYM
 
 clobber:
 	rm -f *~
