@@ -1,5 +1,6 @@
 #ifndef _CACHE_H
 #define _CACHE_H
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -13,8 +14,6 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-
-#endif
 
 using namespace std;
 
@@ -94,7 +93,7 @@ int Cache::evict(string key) {
 }
 
 vector<char> Cache::lookup(string key) {
-  // return error if not found
+  // return error if Cache Miss
   if (this->my_cache.find(key) == this->my_cache.end()) {
     vector<char> fail;
     return fail; // return ERROR
@@ -103,3 +102,5 @@ vector<char> Cache::lookup(string key) {
 }
 
 int Cache::update() { return 1; }
+
+#endif

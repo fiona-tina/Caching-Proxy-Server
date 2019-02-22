@@ -3,7 +3,7 @@
  * February 18, 2019
  * Prathikshaa Rangarajan (pr109), Rijish Ganguly (rj???)
  */
-#define HTTP_PORT "8000"
+#define HTTP_PORT "12345"
 #define LISTEN_BACKLOG 1000
 
 #include <cstdio>
@@ -286,7 +286,7 @@ int main(void) {
 
     // adding to cache
     s_cache.insert(request, response);
-    cout << "in cache" << endl;
+    cout << "Response has been cached." << endl;
     s_cache.print();
 
     send(user_fd, resp_str.c_str(), resp_str.length(), 0);
