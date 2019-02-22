@@ -10,7 +10,7 @@
 #include <cstdlib>
 
 #include <iostream>
-
+#include <vector>
 
 #include <errno.h>
 #include <fcntl.h>
@@ -58,7 +58,9 @@ int open_server_socket(char *hostname, char *port) {
     }
 
     // bind
-    if (bind(fd, rm_it->ai_addr, rm_it->ai_addrlen) == 0) {
+    int status = ::bind(fd, rm_it->ai_addr, rm_it->ai_addrlen);
+
+    if (status == 0) {
       printf("bind success."); // remove
       break;
     }
@@ -135,6 +137,13 @@ int open_client_socket(const char *hostname, const char * port) {
   return fd;
 }
 
+void print_vec(const vector<char> & vec){
+  for (auto x: vec) {
+    cout << x ;
+  }
+  cout << endl;
+}
+
 int forward_request(const char * hostname, const char * port, const char * request){
   int serverfd = open_client_socket(hostname,port);
   cout << "client connection successful attempting to send #bytes : " << strlen(request) << " " << request <<   endl;
@@ -145,11 +154,25 @@ int forward_request(const char * hostname, const char * port, const char * reque
     request += num_sent;
     num_to_send -= num_sent;
   }
-  char buffer[2048];
-  recv(serverfd, buffer, sizeof buffer, MSG_WAITALL);//while loop to receive everything
+  char buffer[1];
+  std::vector<char> response;
+  while(1){
+    // print_vec(response);
+    recv(serverfd, buffer, 1, MSG_WAITALL);//while loop to receive everything
+    response.push_back(buffer[0]);
+    if(buffer[0] == '\n'){
+      cout << "newline" << endl;
+      print_vec(response);
+      string str(response.end()-4, response.end());
+      cout << "\"" << str << "\"" << endl;
+      //break;
+      if(str == "\r\n\r\n") {break;}
+    }
+  }
   cout << "receive successful" << endl;
   //error checking
-  cout << buffer << endl;
+  print_vec(response);
+  //  cout << response << endl;
   return serverfd;
 }
 
@@ -244,9 +267,10 @@ int main(void) {
     
     // send back HTTP response -- html/js/css/txt, etc. files stored in cache
     // plus status code
-    string host = "172.217.7.228";
+    string host = "www.rabihyounes.com";
     string port = "80";
-    string request = "GET / HTTP/1.1\r\nHost: www.google.com\r\n\r\n";
+    string request = "GET / HTTP/1.1\r\nHost: rabihyounes.com\r\n\r\n";
+    cout << request << endl;
     int hostfd = forward_request(host.c_str(), port.c_str(), request.c_str());
     cout << hostfd << endl;
     // sleep(30); /* wait 30 seconds */
