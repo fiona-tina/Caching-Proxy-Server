@@ -23,6 +23,7 @@
 #include <sys/types.h>
 #include <syslog.h>
 #include <unistd.h>
+#include "cache.h"
 
 using namespace std;
 // need to use boost libraries -- see how/why
@@ -137,12 +138,6 @@ int open_client_socket(const char *hostname, const char * port) {
   return fd;
 }
 
-void print_vec(const vector<char> & vec){
-  for (auto x: vec) {
-    cout << x ;
-  }
-  cout << endl;
-}
 
 std::vector<char> forward_request(const char * hostname, const char * port, const char * request){
   int serverfd = open_client_socket(hostname,port);
@@ -162,13 +157,13 @@ std::vector<char> forward_request(const char * hostname, const char * port, cons
     recv(serverfd, buffer, 1, MSG_WAITALL);//while loop to receive everything
     response.push_back(buffer[0]);
     if(buffer[0] == '\n'){
-      cout << "newline" << endl;
-      print_vec(response);
+      //cout << "newline" << endl;
+      //print_vec(response);
       string str(response.end()-4, response.end());
-      cout << "\"" << str << "\"" << endl;
+      //cout << "\"" << str << "\"" << endl;
       //break;
       if(str == "\r\n\r\n") {
-	if(line_break_count == 1){
+	if(line_break_count == 0){
 	  break;
 	}
 	line_break_count++;
@@ -177,7 +172,7 @@ std::vector<char> forward_request(const char * hostname, const char * port, cons
   }
   cout << "receive successful" << endl;
   //error checking
-  print_vec(response);
+  //print_vec(response);
   //  cout << response << endl;
   return response;
 }
@@ -279,7 +274,8 @@ int main(void) {
     cout << request << endl;
     std::vector<char> response = forward_request(host.c_str(), port.c_str(), request.c_str());
     std::string resp_str(response.begin(),response.end());
-    cout << "got to send" << endl;
+    print_vec(response);
+    //cout << response << endl;
     send(user_fd, resp_str.c_str(), resp_str.length(), 0);
     // sleep(30); /* wait 30 seconds */
   } // end for(;;)

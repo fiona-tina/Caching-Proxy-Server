@@ -9,6 +9,9 @@ all: $(TARGETS)
 proxy_daemon: proxy_daemon.cpp
 	$(CC) $(CCFLAGS) -o $@ $<
 
+cache: cache.cpp cache.h
+	$(CC) $(CCFLAGS) -o $@ $<
+
 clean:
 	rm -f *~ $(TARGETS)
 
