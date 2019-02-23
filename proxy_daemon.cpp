@@ -62,7 +62,7 @@ int open_server_socket(char *hostname, char *port) {
     int status = ::bind(fd, rm_it->ai_addr, rm_it->ai_addrlen);
 
     if (status == 0) {
-      std::cout << "Successfully bound to port" << port << std::endl; // log
+      std::cout << "Successfully bound to port " << port << std::endl; // log
       break;
     }
 
@@ -142,7 +142,9 @@ std::vector<char> forward_request(const char *hostname, const char *port,
                                   const char *request) {
   int serverfd = open_client_socket(hostname, port);
   cout << "client connection successful attempting to send #bytes : "
-       << strlen(request) << " " << request << endl;
+       << strlen(request) << endl
+       << request << endl;
+
   int num_to_send = strlen(request);
   while (num_to_send > 0) {
     cout << "bytes left to send : " << num_to_send << endl;
@@ -172,7 +174,7 @@ std::vector<char> forward_request(const char *hostname, const char *port,
       }
     }
   }
-  cout << "receive successful" << endl;
+  cout << "Successful Receive" << endl;
   // error checking
   // print_vec(response);
   //  cout << response << endl;
@@ -200,7 +202,7 @@ int main(void) {
     exit(EXIT_FAILURE);
   }
 
-  printf("connected to client");
+  std::cout << "connected to client" << std::endl;
 
   // /* Our process ID and Session ID */
   // pid_t pid, sid;
