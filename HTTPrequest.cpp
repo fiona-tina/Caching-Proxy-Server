@@ -76,7 +76,7 @@ int HTTPrequest::get_content_length(){
 }
 
 
-int set_fields(){
+int HTTPrequest::set_fields(){
 
 	string original_request(request_buffer.data());
 	string request;
@@ -116,10 +116,64 @@ int set_fields(){
 		this->server_port_num = 443;
 
 	//Get http type
+	request.erase(0, position_two + 1);
+	position_two = request.find(" ");
+	if(!(position_two == string::npos)){
+		this->http_type = request.substr(position_two + 1);
+	}
+	else{
+		cerr << "Request format is incorrect." << endl;
+		return -1;
+	}
+
+	if((this->http_type.compare("HTTP/1.0") == 0) || (this->http_type.compare("HTTP/1.1") == 0)){
+		cerr << "HTTP type is incorrect." << endl;
+		return -1;
+	}
 	
+	//Get server name
+    string helper_request(request_buffer.data());
+    string host;
+    helper_request = helper_request.substr(helper_request.find("Host: ")+6);
+    host = helper_request.substr(0, helper.find("\r\n"));
+    size_t position_three = host.find(":");
+    if(!(position_three != string::npos)){
+    	cerr << "Request format is incorrect." << endl;
+    	return -1;
+    }
+    else{
+    	host = host.substr(0,position_three); 
+    	this->server = host;
+    }
 
 
+    //The case where port num is different than 443 or 80
+    string actual_request(request_buffer.data());
+    string temporary;
+ 	actual_request = actual_request.substr(actual_request.find("Host:")+6);
+ 	size_t position_four = actual_request.find("\r\n");
+    actual_request = actual_request.substr(0, position_four);
 
+    if(actual_request.find(":")!= string::npos){
+      actual_request = actual_request.substr(actual_request.find(":")+1);
+      temporary = actual_request.substr(0,actual_request.find("\r\n"));
+      this->server_port_num = std::stoi(temporary);
+    }
+    else
+    {	
+    	cerr << "Request format is incorrect." << endl;
+    	return -1;
+    }
+   
+
+	return 0;
+
+
+}
+
+
+int main(){
+return 0;
 
 }
 
