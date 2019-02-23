@@ -30,11 +30,11 @@ public:
   size_t size;
   size_t max_size;
   void print(void);
-  int insert(string key, vector<char> val);
-  int evictNMRU(void);
-  int evict(string key);
+  ssize_t insert(string key, vector<char> val);
+  ssize_t evictNMRU(void);
+  ssize_t evict(string key);
   vector<char> lookup(string key);
-  int update();
+  ssize_t update();
 
   Cache(int max_size) : size(0), max_size(max_size){};
   Cache() : size(0), max_size(4){};
@@ -46,28 +46,30 @@ void print_vec(const vector<char> &vec) {
     cout << x;
   }
   cout << endl;
+  return;
 }
 
 void Cache::print(void) {
+  std::cout << "Cache:" << std::endl;
   for (auto it : this->my_cache) {
-    cout << " " << it.first << ":";
+    std::cout << " " << it.first << ":";
     print_vec(it.second);
-    cout << endl;
+    std::cout << std::endl;
   }
   return;
 }
 
-int Cache::insert(string key, vector<char> val) {
+ssize_t Cache::insert(string key, vector<char> val) {
   if (this->size == this->max_size) {
     evictNMRU();
   }
   this->my_cache[key] = val;
   this->size++;
   this->MRU = key;
-  return 1;
+  return 0;
 }
 
-int Cache::evictNMRU(void) {
+ssize_t Cache::evictNMRU(void) {
   for (auto it : this->my_cache) {
     if (it.first != this->MRU) {
       this->my_cache.erase(it.first);
@@ -75,10 +77,10 @@ int Cache::evictNMRU(void) {
     }
   }
   this->size--;
-  return 1;
+  return 0;
 }
 
-int Cache::evict(string key) {
+ssize_t Cache::evict(string key) {
   for (auto it : this->my_cache) {
     if (key == it.first) {
       this->my_cache.erase(it.first);
@@ -89,7 +91,7 @@ int Cache::evict(string key) {
     this->MRU = this->my_cache.begin()->first;
   }
   this->size--;
-  return 1;
+  return 0;
 }
 
 vector<char> Cache::lookup(string key) {
@@ -101,6 +103,6 @@ vector<char> Cache::lookup(string key) {
   return this->my_cache[key];
 }
 
-int Cache::update() { return 1; }
+ssize_t Cache::update() { return 1; }
 
 #endif

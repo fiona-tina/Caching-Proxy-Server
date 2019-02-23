@@ -62,7 +62,7 @@ int open_server_socket(char *hostname, char *port) {
     int status = ::bind(fd, rm_it->ai_addr, rm_it->ai_addrlen);
 
     if (status == 0) {
-      printf("bind success."); // remove
+      std::cout << "Successfully bound to port" << port << std::endl; // log
       break;
     }
 
