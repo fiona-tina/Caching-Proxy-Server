@@ -159,14 +159,8 @@ int HTTPrequest::set_fields(){
       temporary = actual_request.substr(0,actual_request.find("\r\n"));
       this->server_port_num = std::stoi(temporary);
     }
-    else
-    {	
-    	cerr << "Request format is incorrect." << endl;
-    	return -1;
-    }
    
-
-	return 0;
+   return 0;
 
 
 }
