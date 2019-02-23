@@ -1,6 +1,8 @@
 #ifndef _HTTPREQUEST_H
 #define _HTTPREQUEST_H
 #include <iostream>
+#include <vector>
+#include <string>
 
 #define MAX_BUFFER 65536
 
@@ -23,21 +25,23 @@ public:
 	int content_length;
 
 
-	int set_length();
+	int get_content_length();
 	int set_fields();
-	string get_etag();
-	bool succesful_request();
+	string return_etag();
+	string return_header();
+	bool header_receive_successful();
 
 	HTTPrequest(){
-		this.header_length = 0;
-		this.content_length = 0;
-		this.total_length = 0;
+		this->header_length = 0;
+		this->content_length = 0;
+		this->total_length = 0;
 		request_buffer.resize(MAX_BUFFER);
 	};
 	~HTTPrequest(){};
 
 };
 
+#endif
 
 
 
