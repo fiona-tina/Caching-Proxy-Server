@@ -1,7 +1,7 @@
 /**
  * Caching Proxy Server in C++
  * February 18, 2019
- * Prathikshaa Rangarajan (pr109), Rijish Ganguly (rj???)
+ * Prathikshaa Rangarajan (pr109), Rijish Ganguly (rj???), David Laub (dgl9)
  */
 #define HTTP_PORT "12345"
 #define LISTEN_BACKLOG 1000
@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "HTTPrequest.h"
+#include "HTTPresponse.h"
 #include "cache.h"
 
 #include <errno.h>
@@ -179,11 +180,42 @@ std::vector<char> forward_request(const char *hostname, const char *port,
     }
   }
 
-  cout << "Successful Receive" << endl;
-  // error checking
-  // print_vec(response);
-  // cout << response << endl;
-  return response;
+
+    std::string resp_str(response.begin(), response.end());
+    print_vec(response);
+    HTTPresponse response_object;
+    response_object.response_buffer = response;
+    print_vec(response_object.response_buffer); // remove
+  
+    int content_len = response_object.get_content_length();
+    if(content_len >= 0){
+      cout << "len = " << content_len << endl;
+      
+      std::vector<char> msg_body2(content_len);
+      
+      int recv_err = recv(serverfd, msg_body2.data(), content_len, MSG_WAITALL);
+      if (recv_err == -1) {
+	cerr << "recv failed" << endl;
+	perror("recv");
+      }
+      cout << "printing msg" << endl;
+    
+      print_vec(msg_body2);
+    
+      response_object.response_buffer.insert(response_object.response_buffer.end(),
+					     msg_body2.begin(), msg_body2.end());
+      cout << "printing msg with body" << endl;
+      print_vec(response_object.response_buffer);
+      cout << "Successful Receive" << endl;
+      // error checking
+    // print_vec(response);
+    // cout << response << endl;
+      
+    }
+    return response_object.response_buffer;
+
+
+
 }
 
 int forward_connect(int fd1, int fd2) {
@@ -283,17 +315,16 @@ int main(void) {
 
   struct sockaddr_storage user_addr;
   socklen_t user_addr_len = sizeof(user_addr);
-
-  // become a daemon
-  // ref: http://www.netzmafia.de/skripten/unix/linux-daemon-howto.html
   int user_fd =
       accept(listener_fd, (struct sockaddr *)&user_addr, &user_addr_len);
-  if (user_fd == -1) {
-    perror("Error: failed to accept connection on socket\n");
-    exit(EXIT_FAILURE);
-  }
+    if (user_fd == -1) {
+      perror("Error: failed to accept connection on socket\n");
+      exit(EXIT_FAILURE);
+    }
+    std::cout << "connected to client" << std::endl;
+  // become a daemon
+  // ref: http://www.netzmafia.de/skripten/unix/linux-daemon-howto.html
 
-  std::cout << "connected to client" << std::endl;
 
   // /* Our process ID and Session ID */
   // pid_t pid, sid;
@@ -335,8 +366,9 @@ int main(void) {
   // /* Daemon-specific initialization goes here */
 
   /* The Big Loop */
-  for (;;) { // daemon loop
 
+  for (;;) { // daemon loop
+    
     // accept connection here
 
     // spawn thread to handle request from user_fd
@@ -356,6 +388,8 @@ int main(void) {
     std::vector<char> request_header;
     size_t line_break_count = 0;
     while (1) {
+
+
       // print_vec(request_header);
       recv(user_fd, http_req_buf, 1,
            MSG_WAITALL); // while loop to receive everything
@@ -383,23 +417,27 @@ int main(void) {
 
     request_obj.set_fields();
     int content_len = request_obj.get_content_length();
-    cout << "len = " << content_len << endl;
+    if(content_len >= 0){
+      cout << "len = " << content_len << endl;
 
-    std::vector<char> msg_body(content_len);
+      std::vector<char> msg_body(content_len);
 
-    int recv_err = recv(user_fd, msg_body.data(), content_len, MSG_WAITALL);
-    if (recv_err == -1) {
-      cerr << "recv failed" << endl;
-      perror("recv");
-    }
-    cout << "printing msg" << endl;
-
-    print_vec(msg_body);
-
-    request_obj.request_buffer.insert(request_obj.request_buffer.end(),
+      int recv_err = recv(user_fd, msg_body.data(), content_len, MSG_WAITALL);
+      if (recv_err == -1) {
+	cerr << "recv failed" << endl;
+	perror("recv");
+      }
+      cout << "printing msg" << endl;
+      
+      print_vec(msg_body);
+      
+      request_obj.request_buffer.insert(request_obj.request_buffer.end(),
                                       msg_body.begin(), msg_body.end());
 
-    print_vec(request_obj.request_buffer);
+      print_vec(request_obj.request_buffer);
+    }
+
+    
 
     // send(user_fd, buffer, sizeof buffer, 0);
 
@@ -417,35 +455,45 @@ int main(void) {
 
     // send back HTTP response -- html/js/css/txt, etc. files stored in cache
     // plus status code
-    string host = "www.youtube.com";
+    
+
+    
+    //string host = "www.youtube.com";
     string port = "80";
-    string request = "CONNECT / HTTP/1.1\r\nHost: youtube.com\r\n\r\n";
-    cout << request << endl;
+    //string request = "CONNECT / HTTP/1.1\r\nHost: youtube.com\r\n\r\n";
+    //    cout << request << endl;
 
     // cache lookup
-    if (0) {
-      std::vector<char> response =
-          forward_request(host.c_str(), port.c_str(), request.c_str());
-      std::string resp_str(response.begin(), response.end());
-      print_vec(response);
-      // cout << response << endl;
+    cout << request_obj.http_method << endl;
+    if (request_obj.http_method == "GET"  ||  request_obj.http_method == "POST") {
+      std::vector<char> response = 
+	forward_request(request_obj.server.c_str(), port.c_str(), request_obj.request_buffer.data());
+      sendall(response.data(), user_fd, response.size());
 
+    } 
+    else{
+      openTunnel(request_obj.server.c_str(), "443", user_fd);
+    }
+      
+      
+      //cout << response << endl;
+      
       // if we receive an invalid response (502)
 
       // adding to cache
-      s_cache.insert(request, response);
-      cout << "Response has been cached." << endl;
-      s_cache.print();
-
-      send(user_fd, resp_str.c_str(), resp_str.length(), 0);
-    } else {
-      cout << "opening tunnel" << endl;
-      // openTunnel(host.c_str(), "443", user_fd);
-      break;
-    }
+      // s_cache.insert(request, response);
+    cout << "Response has been cached." << endl;
+      //s_cache.print();
+    
+      //send(user_fd, resp_str.c_str(), resp_str.length(), 0);
+    
+    
+    
+    
+  }
 
     // sleep(30); /* wait 30 seconds */
-  } // end for(;;)
+
 
   return EXIT_SUCCESS;
 }

@@ -161,15 +161,12 @@ int HTTPrequest::set_fields() {
   helper_request = helper_request.substr(helper_request.find("Host: ") + 6);
   host = helper_request.substr(0, helper_request.find("\r\n"));
   this->server = host;
-  // size_t position_three = host.find(":");
-  // if(!(position_three != string::npos)){
-  // 	cerr << "Request format is incorrect." << endl;
-  //	return -1;
-  //}
-  // else{
-  // 	host = host.substr(0,position_three);
+  size_t position_three = host.find(":");
+  if((position_three != string::npos)){
+    host = host.substr(0,position_three);      
+    this->server = host;
+  }
 
-  // }
 
   // The case where port num is different than 443 or 80
   string actual_request(request_buffer.data());
