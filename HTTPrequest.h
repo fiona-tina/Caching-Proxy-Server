@@ -167,7 +167,7 @@ int HTTPrequest::set_fields(){
 		return -1;
 	}
 
-	if((this->http_type.compare("HTTP/1.0") == 0) && (this->http_type.compare("HTTP/1.1") == 0)){
+	if((this->http_type.compare("HTTP/1.0") != 0) && (this->http_type.compare("HTTP/1.1") != 0)){
 		cerr << "HTTP type is incorrect." << endl;
 		return -1;
 	}
@@ -177,6 +177,7 @@ int HTTPrequest::set_fields(){
     string host;
     helper_request = helper_request.substr(helper_request.find("Host: ")+6);
     host = helper_request.substr(0, helper_request.find("\r\n"));
+    this->server = host;
     //size_t position_three = host.find(":");
     //if(!(position_three != string::npos)){
     // 	cerr << "Request format is incorrect." << endl;
@@ -184,7 +185,7 @@ int HTTPrequest::set_fields(){
     //}
     //else{
     // 	host = host.substr(0,position_three); 
-    this->server = host;
+    
     // }
 
 
