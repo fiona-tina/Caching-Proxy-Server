@@ -181,26 +181,25 @@ std::vector<char> forward_request(const char *hostname, const char *port,
   return response;
 }
 
-
-int forward_connect(int fd1, int fd2){
+int forward_connect(int fd1, int fd2) {
   vector<char> data;
   char buffer[1];
-  while(1){
-    int size = recv(fd1, buffer, 1, MSG_WAITALL); // while loop to receive everything
+  while (1) {
+    int size =
+        recv(fd1, buffer, 1, MSG_WAITALL); // while loop to receive everything
     data.push_back(buffer[0]);
-    if(size == 0){
+    if (size == 0) {
       break;
     }
-    
   }
   return 1;
 }
 
-int sendall(const char * buff, int fd, size_t size ){
+int sendall(const char *buff, int fd, size_t size) {
   int num_to_send = strlen(buff);
   while (num_to_send > 0) {
     cout << "bytes left to send : " << num_to_send << endl;
-    int num_sent = send(fd, buff, num_to_send,0); 
+    int num_sent = send(fd, buff, num_to_send, 0);
     buff += num_sent;
     num_to_send -= num_sent;
   }
@@ -208,56 +207,55 @@ int sendall(const char * buff, int fd, size_t size ){
   return 1;
 }
 
-void openTunnel(const char *hostname, const char *port,
-                                  int user_fd) {
+void openTunnel(const char *hostname, const char *port, int user_fd) {
   int serverfd = open_client_socket(hostname, port);
   string OK = "HTTP/1.1 200 OK\r\n\r\n";
-  sendall(OK.c_str(),user_fd,OK.length());
+  sendall(OK.c_str(), user_fd, OK.length());
   int fdmax = serverfd;
   fd_set master;
   fd_set read_fds;
   FD_ZERO(&master);
   FD_ZERO(&read_fds);
-  FD_SET(serverfd,&master);
-  FD_SET(user_fd,&master);
-  while(1){
+  FD_SET(serverfd, &master);
+  FD_SET(user_fd, &master);
+  while (1) {
     read_fds = master;
-    if((select(fdmax + 1, &read_fds, NULL, NULL, NULL) == -1)){
+    if ((select(fdmax + 1, &read_fds, NULL, NULL, NULL) == -1)) {
       perror("select");
       exit(4);
     }
-    if(FD_ISSET(user_fd,&read_fds)){
+    if (FD_ISSET(user_fd, &read_fds)) {
       char buffer[1024];
-      memset(&buffer,0,1024);
-      int rec_size = recv(user_fd, buffer, 1024,0);
-      
+      std::vector<char> v_buffer(1024);
+      memset(&buffer, 0, 1024);
+      int rec_size = recv(user_fd, v_buffer.data(), 1024, 0);
+
       buffer[rec_size] = '\0';
-      cout << "from firefox " << buffer[0] << rec_size<< endl; 
-      if(rec_size == 0){
-	break;
+      cout << "from firefox " << rec_size << endl;
+      print_vec(v_buffer);
+      if (rec_size == 0) {
+        break;
       }
-      sendall(buffer,serverfd, rec_size);
-      //forward
+      sendall(buffer, serverfd, rec_size);
+      // forward
     }
-    if(FD_ISSET(serverfd,&read_fds)){
+    if (FD_ISSET(serverfd, &read_fds)) {
       char buffer[1024];
-      memset(&buffer,0,1024);
-      int rec_size = recv(serverfd, buffer, 1024,0);
+      memset(&buffer, 0, 1024);
+      int rec_size = recv(serverfd, buffer, 1024, 0);
       buffer[rec_size] = '\0';
-      cout << "from google " << rec_size << endl; 
-      sendall(buffer,user_fd, rec_size );
-      if(rec_size == 0){
-	break;
+      cout << "from google " << rec_size << endl;
+      sendall(buffer, user_fd, rec_size);
+      if (rec_size == 0) {
+        break;
       }
-      //forward
+      // forward
     }
   }
 
-  //close(user_fd); //when we have multithreading
+  // close(user_fd); //when we have multithreading
   close(serverfd);
 }
-
-
 
 int main(void) {
   Cache s_cache;
@@ -345,7 +343,7 @@ int main(void) {
 
     // parse HTTP requests -- ref RFC
 
-    // if malformed request then send error back (400) 
+    // if malformed request then send error back (400)
 
     // look in cache -- using files?
 
@@ -359,26 +357,24 @@ int main(void) {
     cout << request << endl;
 
     // cache lookup
-    if(0){
+    if (0) {
       std::vector<char> response =
-	forward_request(host.c_str(), port.c_str(), request.c_str());
+          forward_request(host.c_str(), port.c_str(), request.c_str());
       std::string resp_str(response.begin(), response.end());
       print_vec(response);
       // cout << response << endl;
-      
-      //if we receive an invalid response (502)
-      
+
+      // if we receive an invalid response (502)
+
       // adding to cache
       s_cache.insert(request, response);
       cout << "Response has been cached." << endl;
       s_cache.print();
-      
-      send(user_fd, resp_str.c_str(), resp_str.length(), 0);
-    }
-    else{
-      openTunnel(host.c_str(),"443", user_fd);
-    }
 
+      send(user_fd, resp_str.c_str(), resp_str.length(), 0);
+    } else {
+      openTunnel(host.c_str(), "443", user_fd);
+    }
 
     // sleep(30); /* wait 30 seconds */
   } // end for(;;)
