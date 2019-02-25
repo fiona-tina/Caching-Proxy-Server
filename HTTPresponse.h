@@ -139,7 +139,7 @@ string HTTPresponse::get_cache_control(){
 }
 
 string HTTPresponse::get_date(){
-	string date;
+	//string date;
 	string request(response_buffer.data());
 	size_t position = request.find("Date:");
 	if(position != string::npos){
