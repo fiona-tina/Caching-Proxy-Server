@@ -9,6 +9,7 @@
 
 using namespace std;
 
+
 class HTTPrequest{
 
 public:
@@ -28,6 +29,7 @@ public:
 
 	int get_content_length();
 	int set_fields();
+	int set_header(string request);
 	string return_etag();
 	string return_header();
 	bool header_receive_successful();
@@ -41,6 +43,11 @@ public:
 	~HTTPrequest(){};
 
 };
+
+int HTTPrequest::set_header(string request){
+  this->request_buffer = vector<char>(request.begin(),request.end());
+  return 1;
+}
 
 
 string HTTPrequest::return_header(){
@@ -137,11 +144,10 @@ int HTTPrequest::set_fields(){
 		return -1;
 	}
 
-	if(this->http_method != "GET" || this->http_method != "POST" || this->http_method != "CONNECT"){
+	if(this->http_method != "GET" && this->http_method != "POST" && this->http_method != "CONNECT"){
 		cerr << "Method is not supported." << endl;
 		return -1;
 	}
-
 	//Set the port numbers
 	if((this->http_method.compare("GET") == 0) || (this->http_method.compare("POST") == 0))
 		this->server_port_num = 80;
@@ -159,7 +165,7 @@ int HTTPrequest::set_fields(){
 		return -1;
 	}
 
-	if((this->http_type.compare("HTTP/1.0") == 0) || (this->http_type.compare("HTTP/1.1") == 0)){
+	if((this->http_type.compare("HTTP/1.0") == 0) && (this->http_type.compare("HTTP/1.1") == 0)){
 		cerr << "HTTP type is incorrect." << endl;
 		return -1;
 	}
@@ -169,15 +175,15 @@ int HTTPrequest::set_fields(){
     string host;
     helper_request = helper_request.substr(helper_request.find("Host: ")+6);
     host = helper_request.substr(0, helper_request.find("\r\n"));
-    size_t position_three = host.find(":");
-    if(!(position_three != string::npos)){
-    	cerr << "Request format is incorrect." << endl;
-    	return -1;
-    }
-    else{
-    	host = host.substr(0,position_three); 
-    	this->server = host;
-    }
+    //size_t position_three = host.find(":");
+    //if(!(position_three != string::npos)){
+    // 	cerr << "Request format is incorrect." << endl;
+    //	return -1;
+    //}
+    //else{
+    // 	host = host.substr(0,position_three); 
+    this->server = host;
+    // }
 
 
     //The case where port num is different than 443 or 80
