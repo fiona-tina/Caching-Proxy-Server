@@ -37,6 +37,8 @@ public:
 	string get_etag();
 	bool receive_header_set_parameters();
 	int get_content_length();
+	string get_date();
+	string get_last_modified();
 
 
 
@@ -116,4 +118,40 @@ int HTTPresponse::get_content_length(){
 	}
 
 }
+
+string HTTPresponse::get_date(){
+	string date;
+	string request(response_buffer.data());
+	size_t position = request.find("Date:");
+	if(position != string::npos){
+		request = request.substr(position + 6);
+		int position_two = request.find("\r\n");
+		date = request.substr(0, position_two);
+	}
+
+	return date;
+}
+
+string HTTPresponse::get_expiry_time(){
+	string request(response_buffer.data());
+	string expire_time;
+	size_t position = request.find("Expires:");
+	if(position != string::npos){
+		request = request.substr(position + 9);
+		int position_two = request.find("\r\n");
+		expire_time = request.substr(0,position_two);
+	}
+
+	return expire_time;
+}
+
+string HTTPresponse::get_last_modified(){
+	
+}
+
+
+
+
+
+
 
