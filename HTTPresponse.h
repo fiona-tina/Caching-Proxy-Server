@@ -6,7 +6,7 @@
 #include <vector>
 #include <stdlib.h>
 
-#define MAX_BUFFER_SIZE 1024000
+#define MAX_BUFFER_SIZE 102400
 
 using namespace std;
 
@@ -36,9 +36,11 @@ public:
 	~HTTPresponse() {}
 	string get_etag();
 	bool receive_header_set_parameters();
+	bool server_response_validate();
 	int get_content_length();
 	string get_date();
 	string get_last_modified();
+	string get_cache_control();
 
 
 
@@ -119,6 +121,22 @@ int HTTPresponse::get_content_length(){
 
 }
 
+string HTTPresponse::get_cache_control({
+	string cache_control;
+	string request(response_buffer.data());
+	size_t position = request.find("Cache-Control: ");
+	if(position != string::npos){
+		request = request.substr(position);
+		int position_two = request.find("\r\n");
+		date = request.substr(0, position_two);
+	}
+
+	return cache_control;
+
+
+
+}
+
 string HTTPresponse::get_date(){
 	string date;
 	string request(response_buffer.data());
@@ -147,6 +165,17 @@ string HTTPresponse::get_expiry_time(){
 
 string HTTPresponse::get_last_modified(){
 	
+	string request(response_buffer.data());
+	string last;
+	size_t position = request.find("Last-Modified:");
+	if(position != string::npos){
+		request = request.substr(position + 15);
+		int position_two = request.find("\r\n");
+		last = request.substr(0,position_two);
+	}
+
+	return last;
+
 }
 
 
