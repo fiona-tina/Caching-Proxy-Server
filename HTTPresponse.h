@@ -2,7 +2,6 @@
 #define _HTTPRESPONSE_H
 #include <iostream>
 #include <stdio.h>
-#include <chrono>
 #include <string>
 #include <vector>
 #include <stdlib.h>
@@ -22,7 +21,6 @@ public:
 	int header_length;
 	int content_length;
 	int total_length;
-	string max-age; //Alternative to expire
 
 	vector<char> response_buffer;
 	string first_line;
@@ -41,7 +39,6 @@ public:
 	bool receive_header_set_parameters();
 	bool server_response_validate();
 	int get_content_length();
-	int get_age;
 	string get_date();
 	string get_last_modified();
 	string get_cache_control();
@@ -132,22 +129,9 @@ string HTTPresponse::get_cache_control(){
 	if(position != string::npos){
 		request = request.substr(position);
 		int position_two = request.find("\r\n");
-		cache_control = request.substr(0, position_two);
+		string date = request.substr(0, position_two);
 	}
 
-	int position_three = cache_control.find("max-age=");
-	if(position_three != string::npos){
-		string copy = cache_control.substr(position_three);
-		int position_four = copy.find("\r\n");
-		copy = copy.substr(0, position_four);
-		int max-age = stoi(copy);
-		int hours = max-age / 3600;
-		int minutes = (max-age % 3600) / 60;
-		int seconds = max-age % 60;
-		
-	
-	}
-	
 	return cache_control;
 
 
@@ -194,6 +178,7 @@ string HTTPresponse::get_last_modified(){
 	return last;
 
 }
+
 
 
 
