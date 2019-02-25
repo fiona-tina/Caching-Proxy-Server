@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <stdlib.h>
+#endif
 
 #define MAX_BUFFER_SIZE 102400
 
@@ -44,7 +45,7 @@ public:
 	string get_date();
 	string get_last_modified();
 	string get_cache_control();
-
+	string get_expiry_time();
 
 
 
@@ -116,7 +117,7 @@ int HTTPresponse::get_content_length(){
 				return -1;
 			}
 			
-			return 0;
+			return this->content_length;
 
 		}
 
@@ -124,7 +125,7 @@ int HTTPresponse::get_content_length(){
 
 }
 
-string HTTPresponse::get_cache_control({
+string HTTPresponse::get_cache_control(){
 	string cache_control;
 	string request(response_buffer.data());
 	size_t position = request.find("Cache-Control: ");
@@ -160,7 +161,7 @@ string HTTPresponse::get_date(){
 	if(position != string::npos){
 		request = request.substr(position + 6);
 		int position_two = request.find("\r\n");
-		date = request.substr(0, position_two);
+		string date = request.substr(0, position_two);
 	}
 
 	return date;
