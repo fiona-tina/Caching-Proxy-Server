@@ -17,7 +17,7 @@
 
 using namespace std;
 
-typedef std::unordered_map<string, std::vector<char>> map;
+typedef std::unordered_map<string, std::vector<char> > map;
 
 class Cache {
 
