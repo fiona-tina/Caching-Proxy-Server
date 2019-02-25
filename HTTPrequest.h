@@ -90,19 +90,21 @@ int HTTPrequest::get_content_length(){
 	}
 	else{
 		string parse(temp.erase(0, content_len_pos));
+		content_len_pos = parse.find(": ");
 		size_t position = parse.find("\r\n");
 		if(position == string::npos){
 			cerr << "Strange request." << endl;
 			return -1;
 		}
+		else{
 
 		stringstream ss;
 		ss << parse.substr(content_len_pos + 2, content_len_pos - position);
 		ss >> this->content_length;
 		this->total_length = this->header_length + this->content_length;
-
 		return 0;
 
+		}
 
 	}
 
