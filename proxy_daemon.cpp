@@ -12,7 +12,9 @@
 #include <iostream>
 #include <vector>
 
+#include "HTTPrequest.h"
 #include "cache.h"
+
 #include <errno.h>
 #include <fcntl.h>
 #include <netdb.h>
@@ -153,6 +155,8 @@ std::vector<char> forward_request(const char *hostname, const char *port,
     request += num_sent;
     num_to_send -= num_sent;
   }
+
+  // get HTTP header
   char buffer[1];
   std::vector<char> response;
   size_t line_break_count = 0;
@@ -174,10 +178,11 @@ std::vector<char> forward_request(const char *hostname, const char *port,
       }
     }
   }
+
   cout << "Successful Receive" << endl;
   // error checking
   // print_vec(response);
-  //  cout << response << endl;
+  // cout << response << endl;
   return response;
 }
 
@@ -217,10 +222,11 @@ void openTunnel(const char *hostname, const char *port, int user_fd) {
   FD_SET(serverfd, &master);
   FD_SET(user_fd, &master);
 
-  string OK = "HTTP/1.1 200 Connection Established\r\nConnection: close\r\n\r\n";
+  string OK =
+      "HTTP/1.1 200 Connection Established\r\nConnection: close\r\n\r\n";
   sendall(OK.c_str(), user_fd, OK.length());
 
-  while(1) {
+  while (1) {
     read_fds = master;
     if ((select(fdmax + 1, &read_fds, NULL, NULL, NULL) == -1)) {
       perror("select");
@@ -231,14 +237,15 @@ void openTunnel(const char *hostname, const char *port, int user_fd) {
       std::vector<char> v_buffer(2048);
       memset(&buffer, 0, 2048);
       int rec_size = recv(user_fd, v_buffer.data(), 2048, 0);
-      if(rec_size == -1) perror("GOOG") ;
+      if (rec_size == -1)
+        perror("GOOG");
       buffer[rec_size] = '\0';
       cout << "from firefox " << rec_size << endl;
       print_vec(v_buffer);
       if (rec_size == 0) {
         break;
       }
-      //send(serverfd,buffer,strlen(buffer),0);
+      // send(serverfd,buffer,strlen(buffer),0);
       sendall(v_buffer.data(), serverfd, rec_size);
       // forward
     }
@@ -247,11 +254,12 @@ void openTunnel(const char *hostname, const char *port, int user_fd) {
       std::vector<char> v_buffer(2048);
       memset(&buffer, 0, 1024);
       int rec_size = recv(serverfd, v_buffer.data(), 2048, 0);
-      if(rec_size == -1) perror("GOOG") ;
+      if (rec_size == -1)
+        perror("GOOG");
       buffer[rec_size] = '\0';
       cout << "from google " << rec_size << endl;
       print_vec(v_buffer);
-      //send(serverfd,buffer,strlen(buffer),0);
+      // send(serverfd,buffer,strlen(buffer),0);
       sendall(v_buffer.data(), user_fd, rec_size);
       if (rec_size == 0) {
         break;
@@ -334,15 +342,66 @@ int main(void) {
     // spawn thread to handle request from user_fd
 
     // recv the HTTP REQ
-    char buffer[512];
-    memset(&buffer, 0, sizeof buffer);
+    // char buffer[512];
+    // memset(&buffer, 0, sizeof buffer);
 
-    ssize_t read_id;
+    // ssize_t read_id;
 
-    read_id = recv(user_fd, buffer, sizeof(buffer), 0); // MSG_WAITALL
-    buffer[read_id] = '\0';
-    printf("msg recvd:%s", buffer);
-    //    send(user_fd, buffer, sizeof buffer, 0);
+    // read_id = recv(user_fd, buffer, sizeof(buffer), 0); // MSG_WAITALL
+    // buffer[read_id] = '\0';
+    // printf("msg recvd:%s", buffer);
+
+    // get HTTP header
+    char http_req_buf[1];
+    std::vector<char> request_header;
+    size_t line_break_count = 0;
+    while (1) {
+      // print_vec(request_header);
+      recv(user_fd, http_req_buf, 1,
+           MSG_WAITALL); // while loop to receive everything
+      request_header.push_back(http_req_buf[0]);
+      if (http_req_buf[0] == '\n') {
+        // cout << "newline" << endl;
+        // print_vec(request_header);
+        string str(request_header.end() - 4, request_header.end());
+        // cout << "\"" << str << "\"" << endl;
+        // break;
+        if (str == "\r\n\r\n") {
+          if (line_break_count == 0) {
+            break;
+          }
+          line_break_count++;
+        }
+      }
+    }
+
+    print_vec(request_header);
+
+    HTTPrequest request_obj;
+    request_obj.request_buffer = request_header;
+    print_vec(request_obj.request_buffer); // remove
+
+    request_obj.set_fields();
+    int content_len = request_obj.get_content_length();
+    cout << "len = " << content_len << endl;
+
+    std::vector<char> msg_body(content_len);
+
+    int recv_err = recv(user_fd, msg_body.data(), content_len, MSG_WAITALL);
+    if (recv_err == -1) {
+      cerr << "recv failed" << endl;
+      perror("recv");
+    }
+    cout << "printing msg" << endl;
+
+    print_vec(msg_body);
+
+    request_obj.request_buffer.insert(request_obj.request_buffer.end(),
+                                      msg_body.begin(), msg_body.end());
+
+    print_vec(request_obj.request_buffer);
+
+    // send(user_fd, buffer, sizeof buffer, 0);
 
     // pre-spawn threads to handle requests
 
@@ -381,7 +440,7 @@ int main(void) {
       send(user_fd, resp_str.c_str(), resp_str.length(), 0);
     } else {
       cout << "opening tunnel" << endl;
-      openTunnel(host.c_str(), "443", user_fd);
+      // openTunnel(host.c_str(), "443", user_fd);
       break;
     }
 

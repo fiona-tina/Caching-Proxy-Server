@@ -79,7 +79,8 @@ string HTTPrequest::return_etag() {
 
 int HTTPrequest::get_content_length() {
   string temp(request_buffer.data());
-  size_t content_len_pos = temp.find("Content-Length: ");
+  size_t content_len_pos =
+      temp.find("content-length: "); // make case insensitive
   if (content_len_pos == string::npos) {
     return -1;
   } else {
@@ -95,7 +96,7 @@ int HTTPrequest::get_content_length() {
       ss << parse.substr(content_len_pos + 2, content_len_pos - position);
       ss >> this->content_length;
       this->total_length = this->header_length + this->content_length;
-      return 0;
+      return this->content_length;
     }
   }
 }
