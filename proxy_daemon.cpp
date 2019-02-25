@@ -195,8 +195,8 @@ int forward_connect(int fd1, int fd2) {
   return 1;
 }
 
-int sendall(const char *buff, int fd, size_t size) {
-  int num_to_send = strlen(buff);
+int sendall(const char *buff, int fd, int size) {
+  int num_to_send = size;
   while (num_to_send > 0) {
     cout << "bytes left to send : " << num_to_send << endl;
     int num_sent = send(fd, buff, num_to_send, 0);
@@ -209,8 +209,6 @@ int sendall(const char *buff, int fd, size_t size) {
 
 void openTunnel(const char *hostname, const char *port, int user_fd) {
   int serverfd = open_client_socket(hostname, port);
-  string OK = "HTTP/1.1 200 OK\r\n\r\n";
-  sendall(OK.c_str(), user_fd, OK.length());
   int fdmax = serverfd;
   fd_set master;
   fd_set read_fds;
@@ -218,34 +216,43 @@ void openTunnel(const char *hostname, const char *port, int user_fd) {
   FD_ZERO(&read_fds);
   FD_SET(serverfd, &master);
   FD_SET(user_fd, &master);
-  while (1) {
+
+  string OK = "HTTP/1.1 200 Connection Established\r\nConnection: close\r\n\r\n";
+  sendall(OK.c_str(), user_fd, OK.length());
+
+  while(1) {
     read_fds = master;
     if ((select(fdmax + 1, &read_fds, NULL, NULL, NULL) == -1)) {
       perror("select");
       exit(4);
     }
     if (FD_ISSET(user_fd, &read_fds)) {
-      char buffer[1024];
-      std::vector<char> v_buffer(1024);
-      memset(&buffer, 0, 1024);
-      int rec_size = recv(user_fd, v_buffer.data(), 1024, 0);
-
+      char buffer[2048];
+      std::vector<char> v_buffer(2048);
+      memset(&buffer, 0, 2048);
+      int rec_size = recv(user_fd, v_buffer.data(), 2048, 0);
+      if(rec_size == -1) perror("GOOG") ;
       buffer[rec_size] = '\0';
       cout << "from firefox " << rec_size << endl;
       print_vec(v_buffer);
       if (rec_size == 0) {
         break;
       }
-      sendall(buffer, serverfd, rec_size);
+      //send(serverfd,buffer,strlen(buffer),0);
+      sendall(v_buffer.data(), serverfd, rec_size);
       // forward
     }
     if (FD_ISSET(serverfd, &read_fds)) {
       char buffer[1024];
+      std::vector<char> v_buffer(2048);
       memset(&buffer, 0, 1024);
-      int rec_size = recv(serverfd, buffer, 1024, 0);
+      int rec_size = recv(serverfd, v_buffer.data(), 2048, 0);
+      if(rec_size == -1) perror("GOOG") ;
       buffer[rec_size] = '\0';
       cout << "from google " << rec_size << endl;
-      sendall(buffer, user_fd, rec_size);
+      print_vec(v_buffer);
+      //send(serverfd,buffer,strlen(buffer),0);
+      sendall(v_buffer.data(), user_fd, rec_size);
       if (rec_size == 0) {
         break;
       }
@@ -351,9 +358,9 @@ int main(void) {
 
     // send back HTTP response -- html/js/css/txt, etc. files stored in cache
     // plus status code
-    string host = "www.google.com";
+    string host = "www.youtube.com";
     string port = "80";
-    string request = "CONNECT / HTTP/1.1\r\nHost: google.com\r\n\r\n";
+    string request = "CONNECT / HTTP/1.1\r\nHost: youtube.com\r\n\r\n";
     cout << request << endl;
 
     // cache lookup
@@ -373,7 +380,9 @@ int main(void) {
 
       send(user_fd, resp_str.c_str(), resp_str.length(), 0);
     } else {
+      cout << "opening tunnel" << endl;
       openTunnel(host.c_str(), "443", user_fd);
+      break;
     }
 
     // sleep(30); /* wait 30 seconds */
