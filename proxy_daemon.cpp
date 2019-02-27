@@ -1,8 +1,9 @@
 /**
  * Caching Proxy Server in C++
  * February 18, 2019
- * Prathikshaa Rangarajan (pr109), Rijish Ganguly (rj???), David Laub (dgl9)
+ * Prathikshaa Rangarajan (pr109), Rijish Ganguly (rg239), David Laub (dgl9)
  */
+
 #define HTTP_PORT "12345"
 #define LISTEN_BACKLOG 1000
 
