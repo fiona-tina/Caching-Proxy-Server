@@ -10,18 +10,21 @@
 #define _HTTPREQUEST_H
 #include <iostream>
 #include <sstream>
+#include <istream>
 #include <string>
 #include <vector>
-
+#include <unordered_map>
 #define MAX_BUFFER 65536
 
 using namespace std;
+
+typedef std::unordered_map<std::string,std::string> stringmap;
 
 class HTTPrequest {
 
 public:
   vector<char> request_buffer;
-
+  stringmap fv_map; //field value mapping
   string request_line;
   string server;
   string http_method;
@@ -33,12 +36,14 @@ public:
   int content_length;
 
   int get_content_length();
+  int build_fv_map();
   int set_fields();
   int set_header(string request);
   string return_etag();
   string return_header();
   string get_cache_control();
   bool header_receive_successful();
+  string get_field_value(string field);
 
   HTTPrequest() {
     this->header_length = 0;
@@ -48,6 +53,39 @@ public:
   };
   ~HTTPrequest(){};
 };
+
+
+int HTTPrequest::build_fv_map(void) {
+  string request(request_buffer.data()); 
+  std::transform(request.begin(), request.end(), request.begin(), std::ptr_fun<int, int>(std::toupper));
+
+  //mark stackoverflow
+  std::istringstream split(request);
+  std::vector<std::string> lines;
+  for (std::string each; std::getline(split, each, '\n'); lines.push_back(each));
+  //mark end
+  
+  for(auto i : lines){
+    size_t pos = i.find(": ");
+    if (pos!=std::string::npos){
+      fv_map[i.substr(0,pos)] = i.substr(pos + 2);
+      //string temp = get_field_value(i.substr(0,pos));
+      //cout << fv_map[i.substr(0, pos)] << temp << endl;
+    }
+  }
+  cout << request << endl;
+  return 1;
+}
+
+
+string HTTPrequest::get_field_value(string field){
+  if(fv_map.find(field) == fv_map.end()){
+    string fail;
+    cout << "FAIL" << endl;
+    return fail;
+  }
+  return fv_map[field];
+}
 
 int HTTPrequest::set_header(string request) {
   this->request_buffer = vector<char>(request.begin(), request.end());
@@ -192,8 +230,8 @@ int HTTPrequest::set_fields() {
   return 0;
 }
 
-  string HTTPrequest::get_cache_control(){ 
-    string cache_control; 
+string HTTPrequest::get_cache_control(){ 
+  string cache_control; 
     string request(request_buffer.data()); 
     size_t position = request.find("Cache-Control: "); 
     if(position != string::npos){ 

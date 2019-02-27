@@ -4,7 +4,6 @@
  * Prathikshaa Rangarajan (pr109), Rijish Ganguly (rg239), David Laub (dgl9)
  */
 
-
 #ifndef _HTTPRESPONSE_H
 #define _HTTPRESPONSE_H
 #include <iostream>
@@ -12,15 +11,18 @@
 #include <stdlib.h>
 #include <string>
 #include <vector>
-#endif
+
 
 #define MAX_BUFFER_SIZE 102400
 
 using namespace std;
 
+typedef std::unordered_map<std::string,std::string> stringmap;
+
 class HTTPresponse {
 
 public:
+  stringmap fv_map; //field value mapping
   int header_length;
   int content_length;
   int total_length;
@@ -47,11 +49,46 @@ public:
   string get_last_modified();
   string get_cache_control();
   string get_expiry_time();
-
+  string get_field_value(string field);//new
+  int build_fv_map(); //new
   bool is_valid_response();
   bool check_transfer_encoding();
   bool received_coded_content(int index);
+
 };
+
+int HTTPresponse::build_fv_map(void) {
+  string request(response_buffer.data()); 
+  std::transform(request.begin(), request.end(), request.begin(), std::ptr_fun<int, int>(std::toupper));
+
+  //mark stackoverflow
+  std::istringstream split(request);
+  std::vector<std::string> lines;
+  for (std::string each; std::getline(split, each, '\n'); lines.push_back(each));
+  //mark end
+  
+  for(auto i : lines){
+    size_t pos = i.find(": ");
+    if (pos!=std::string::npos){
+      fv_map[i.substr(0,pos)] = i.substr(pos + 2);
+      //string temp = get_field_value(i.substr(0,pos));
+      //cout << fv_map[i.substr(0, pos)] << temp << endl;
+    }
+  }
+  cout << request << endl;
+  return 1;
+}
+
+
+string HTTPresponse::get_field_value(string field){
+  if(fv_map.find(field) == fv_map.end()){
+    string fail;
+    cout << "FAIL" << endl;
+    return fail;
+  }
+  return fv_map[field];
+}
+
 
 string HTTPresponse::get_etag() {
   string response(this->response_buffer.begin(), this->response_buffer.end());
@@ -215,3 +252,5 @@ bool HTTPresponse::received_coded_content(int index) {
   }
   return false;
 }
+
+#endif
