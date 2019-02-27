@@ -441,9 +441,9 @@ int main(void) {
 	      }
 	    }
 	    if(cont == 0){
-	      continue;
 	      close(i); // bye!
 	      FD_CLR(i, &master); // remove from master set
+	      continue;
 	    }
 	    
 	    
