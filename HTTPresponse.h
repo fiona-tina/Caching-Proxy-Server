@@ -162,16 +162,16 @@ string HTTPresponse::get_last_modified() {
   return last;
 }
 
-/* bool HTTPresponse::is_valid_response() { */
-/*   string begin = "HTTP/1"; */
-/*   for (int i = 0; i < begin.length(); i++) { */
-/*     if (this->response_buffer != begin.at(i)) { */
-/*       return false; */
-/*     } */
-/*   } */
+ bool HTTPresponse::is_valid_response() { 
+ 	string begin = "HTTP/1";
+ 	for (int i = 0; i < begin.length(); i++) { 
+    	if (this->response_buffer[i] != begin.at(i)) { 
+        	return false; 
+   	 } 
+   } 
 
-/*   return true; */
-/* } */
+   return true; 
+ } 
 
 bool HTTPresponse::check_transfer_encoding() {
   string response(this->response_buffer.data());
@@ -182,17 +182,19 @@ bool HTTPresponse::check_transfer_encoding() {
     return true;
 }
 
-/* int HTTPresponse::get_age() { */
-/*   string response(this->response_buffer.data()); */
-/*   size_t position = response.find("Age:"); */
-/*   if (position != string::npos) { */
-/*     response = response.substr(position + 5); */
-/*     size_t position_two = response.find("\r\n", ); */
-/*     string age = response.substr(0, position_two); */
-/*     int age = stoi(age); */
-/*     return age; */
-/*   } */
-/* } */
+  int HTTPresponse::get_age() { 
+    string response(this->response_buffer.data()); 
+    size_t position = response.find("Age:"); 
+    if (position != string::npos) { 
+      response = response.substr(position + 5); 
+      size_t position_two = response.find("\r\n"); 
+      string age = response.substr(0, position_two); 
+      int num_age = stoi(age); 
+      return num_age; 
+     }
+     else
+     	return 0; 
+   } 
 
 bool HTTPresponse::received_coded_content(int index) {
   for (int i = index; i < this->total_length; i++) {
