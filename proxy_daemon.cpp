@@ -159,6 +159,50 @@ int open_client_socket(const char *hostname, const char *port) {
   return fd;
 }
 
+HTTPrequest receive_request(int user_fd) {
+
+  char http_req_buf[1];
+  std::vector<char> request_header;
+  size_t line_break_count = 0;
+
+  while (1) {
+    int rec = recv(user_fd, http_req_buf, 1,
+                   MSG_WAITALL); // while loop to receive everything
+    if (rec == 0) {
+      pthread_exit(NULL);
+    }
+    request_header.push_back(http_req_buf[0]);
+    if (http_req_buf[0] == '\n') {
+      string str(request_header.end() - 4, request_header.end());
+      if (str == "\r\n\r\n") {
+        if (line_break_count == 0) {
+          break;
+        }
+        line_break_count++;
+      }
+    }
+  }
+
+  HTTPrequest request_obj;
+  request_obj.request_buffer = request_header;
+  request_obj.set_fields();
+
+  int content_len = request_obj.get_content_length();
+  if (content_len >= 0) {
+    cout << "len = " << content_len << endl;
+    std::vector<char> msg_body(content_len);
+    int recv_err = recv(user_fd, msg_body.data(), content_len, MSG_WAITALL);
+    if (recv_err == -1) {
+      cerr << "recv failed" << endl;
+      perror("recv");
+    }
+    cout << "printing msg" << endl;
+    request_obj.request_buffer.insert(request_obj.request_buffer.end(),
+                                      msg_body.begin(), msg_body.end());
+  }
+  return request_obj;
+}
+
 std::vector<char> forward_request(const char *hostname, const char *port,
                                   const char *request) {
   int serverfd = open_client_socket(hostname, port);
@@ -181,7 +225,8 @@ std::vector<char> forward_request(const char *hostname, const char *port,
   size_t line_break_count = 0;
   while (1) {
     // print_vec(response);
-    recv(serverfd, buffer, 1, MSG_WAITALL); // while loop to receive everything
+    recv(serverfd, buffer, 1,
+         MSG_WAITALL); // while loop to receive everything
     response.push_back(buffer[0]);
     if (buffer[0] == '\n') {
       // cout << "newline" << endl;
@@ -254,8 +299,8 @@ void openTunnel(const char *hostname, const char *port, int user_fd) {
   FD_SET(serverfd, &master);
   FD_SET(user_fd, &master);
 
-  // SEND ACK TO FIREFOX THAT A CONNECTION HAS BEEN ESTABLISHED WITH THE ORIGIN
-  // SERVER
+  // SEND ACK TO FIREFOX THAT A CONNECTION HAS BEEN ESTABLISHED WITH THE
+  // ORIGIN SERVER
   string OK =
       "HTTP/1.1 200 Connection Established\r\nConnection: close\r\n\r\n";
   sendall(OK.c_str(), user_fd, OK.length());
@@ -304,48 +349,9 @@ void *process_request(void *uid) {
 
   cout << "incoming" << endl;
   while (1) {
-    char http_req_buf[1];
-    std::vector<char> request_header;
-    size_t line_break_count = 0;
 
-    // MARK : ABSTRACT THIS INTO RECEIVE REQUEST
-    while (1) {
-      int rec = recv(user_fd, http_req_buf, 1,
-                     MSG_WAITALL); // while loop to receive everything
-      if (rec == 0) {
-        pthread_exit(NULL);
-      }
-      request_header.push_back(http_req_buf[0]);
-      if (http_req_buf[0] == '\n') {
-        string str(request_header.end() - 4, request_header.end());
-        if (str == "\r\n\r\n") {
-          if (line_break_count == 0) {
-            break;
-          }
-          line_break_count++;
-        }
-      }
-    }
-    // MARK END: ABSTRACT THIS INTO RECEIVE REQUEST
+    HTTPrequest request_obj = receive_request(user_fd);
 
-    // MARK : PUT THIS IN ABOVE FUNCTION
-    HTTPrequest request_obj;
-    request_obj.request_buffer = request_header;
-    request_obj.set_fields();
-    int content_len = request_obj.get_content_length();
-    if (content_len >= 0) {
-      cout << "len = " << content_len << endl;
-      std::vector<char> msg_body(content_len);
-      int recv_err = recv(user_fd, msg_body.data(), content_len, MSG_WAITALL);
-      if (recv_err == -1) {
-        cerr << "recv failed" << endl;
-        perror("recv");
-      }
-      cout << "printing msg" << endl;
-      request_obj.request_buffer.insert(request_obj.request_buffer.end(),
-                                        msg_body.begin(), msg_body.end());
-    }
-    // MARK : PUT THIS IN ABOVE FUNCTION
     string port = "80";
     cout << request_obj.http_method << endl;
     // IF GET OR POST WE FORWARD ALONG
