@@ -184,18 +184,18 @@ int HTTPrequest::set_fields() {
   return 0;
 }
 
-/* string HTTPrequest::get_cache_control(){ */
-/*   string cache_control; */
-/*   string request(response_buffer.data()); */
-/*   size_t position = request.find("Cache-Control: "); */
-/*   if(position != string::npos){ */
-/*     request = request.substr(position); */
-/*     int position_two = request.find("\r\n"); */
-/*     string date = request.substr(0, position_two); */
-/*   } */
+  string HTTPrequest::get_cache_control(){ 
+    string cache_control; 
+    string request(request_buffer.data()); 
+    size_t position = request.find("Cache-Control: "); 
+    if(position != string::npos){ 
+     request = request.substr(position); 
+    int position_two = request.find("\r\n"); 
+     string date = request.substr(0, position_two); 
+   } 
 
-/*   return cache_control; */
+  return cache_control; 
 
-/* } */
+ } 
 
 #endif
