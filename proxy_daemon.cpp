@@ -299,6 +299,103 @@ void openTunnel(const char *hostname, const char *port, int user_fd) {
   close(serverfd);
 }
 
+
+
+
+
+
+
+
+
+void *process_request(void *uid){
+  cout << (long)uid << endl;
+    
+  long user_fd = (long)uid;
+    if (user_fd == -1) {
+      perror("accept");
+    } 
+
+    cout << "new connection" << endl;
+    
+    
+    cout << "incoming" << endl;
+    while(1){
+    char http_req_buf[1];
+    std::vector<char> request_header;
+    size_t line_break_count = 0;
+
+    //MARK : ABSTRACT THIS INTO RECEIVE REQUEST
+    while (1) {
+      int rec = recv(user_fd, http_req_buf, 1,
+		     MSG_WAITALL); // while loop to receive everything
+      if(rec == 0){
+	pthread_exit(NULL);
+      }
+      request_header.push_back(http_req_buf[0]);
+      if (http_req_buf[0] == '\n') {
+	string str(request_header.end() - 4, request_header.end());
+	if (str == "\r\n\r\n") {
+	  if (line_break_count == 0) {
+	    break;
+	  }
+	  line_break_count++;
+	}
+      }
+    }
+    //MARK END: ABSTRACT THIS INTO RECEIVE REQUEST
+    
+    //MARK : PUT THIS IN ABOVE FUNCTION 
+    HTTPrequest request_obj;
+    request_obj.request_buffer = request_header;
+    request_obj.set_fields();
+    int content_len = request_obj.get_content_length();
+    if(content_len >= 0){
+      cout << "len = " << content_len << endl;
+      std::vector<char> msg_body(content_len);
+      int recv_err = recv(user_fd, msg_body.data(), content_len, MSG_WAITALL);
+      if (recv_err == -1) {
+	cerr << "recv failed" << endl;
+	perror("recv");
+      }
+      cout << "printing msg" << endl;
+      request_obj.request_buffer.insert(request_obj.request_buffer.end(),
+					msg_body.begin(), msg_body.end());
+    }
+    //MARK : PUT THIS IN ABOVE FUNCTION
+    string port = "80";
+    cout << request_obj.http_method << endl;
+    //IF GET OR POST WE FORWARD ALONG
+    if (request_obj.http_method == "GET"  ||  request_obj.http_method == "POST") {
+      //FORWARD REQUEST MAYBE JUST TAKE THE REQUEST???
+      std::vector<char> response = 
+	forward_request(request_obj.server.c_str(), port.c_str(), request_obj.request_buffer.data());
+      sendall(response.data(), user_fd, response.size());
+    } 
+    else{
+      //PERFECT
+      openTunnel(request_obj.server.c_str(), "443", user_fd);
+    }
+    }
+    pthread_exit(NULL);
+    
+}
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 int main(void) {
   Cache s_cache;
   // listener socket -- bind to port (80)?
@@ -307,110 +404,17 @@ int main(void) {
   
   struct sockaddr_storage user_addr;
   socklen_t user_addr_len = sizeof(user_addr);
-
-
-  fd_set master;
-  fd_set read_fds;
-  int fdmax;
-  int user_fd;
-  FD_ZERO(&master);
-  FD_ZERO(&read_fds);
-  FD_SET(listener_fd,&master);
-  fdmax = listener_fd;
-  
+  long user_fd;
   for (;;) { // daemon loop
-
-
-    read_fds = master; // copy it
-    if (select(fdmax+1, &read_fds, NULL, NULL, NULL) == -1) {
-      perror("select");
-      exit(4);
-    }
     
-    // run through the existing connections looking for data to read
-    for(int i = 0; i <= fdmax; i++) {
-      cout << "not blocked" << endl;
-      if (FD_ISSET(i, &read_fds)) { // we got one!!
-	if (i == listener_fd) {
-	  // handle new connections
-	  user_fd =accept(listener_fd, (struct sockaddr *)&user_addr, &user_addr_len);
-	  if (user_fd == -1) {
-	    perror("accept");
-	  } else {
-	    FD_SET(user_fd, &master); // add to master set
-	    if (user_fd > fdmax) {    // keep track of the max
-	      fdmax = user_fd;
-	    }
-	    cout << "new connection" << endl;
-	  }
-	} else {
-	  cout << "incoming" << endl;
-	  char http_req_buf[1];
-	  std::vector<char> request_header;
-	  size_t line_break_count = 0;
-	  int cont = 1;
-	  //MARK : ABSTRACT THIS INTO RECEIVE REQUEST
-	  while (1) {
-	    int rec = recv(i, http_req_buf, 1,
-			   MSG_WAITALL); // while loop to receive everything
-	    if(rec == 0){
-	      cont = 0;
-	      break;
-	    }
-	    request_header.push_back(http_req_buf[0]);
-	    if (http_req_buf[0] == '\n') {
-	      string str(request_header.end() - 4, request_header.end());
-	      if (str == "\r\n\r\n") {
-		if (line_break_count == 0) {
-		  break;
-		}
-		line_break_count++;
-	      }
-	    }
-	  }
-	  if(cont == 0){
-	    close(i); // bye!
-	    FD_CLR(i, &master); // remove from master set
-	    continue;
-	  }
-	  //MARK END: ABSTRACT THIS INTO RECEIVE REQUEST
-
-	  //MARK : PUT THIS IN ABOVE FUNCTION 
-	  HTTPrequest request_obj;
-	  request_obj.request_buffer = request_header;
-	  request_obj.set_fields();
-	  int content_len = request_obj.get_content_length();
-	  if(content_len >= 0){
-	    cout << "len = " << content_len << endl;
-	    std::vector<char> msg_body(content_len);
-	    int recv_err = recv(i, msg_body.data(), content_len, MSG_WAITALL);
-	    if (recv_err == -1) {
-	      cerr << "recv failed" << endl;
-	      perror("recv");
-	    }
-	    cout << "printing msg" << endl;
-	    request_obj.request_buffer.insert(request_obj.request_buffer.end(),
-					      msg_body.begin(), msg_body.end());
-	  }
-	  //MARK : PUT THIS IN ABOVE FUNCTION
-	  string port = "80";
-	  cout << request_obj.http_method << endl;
-	  //IF GET OR POST WE FORWARD ALONG
-	  if (request_obj.http_method == "GET"  ||  request_obj.http_method == "POST") {
-	    //FORWARD REQUEST MAYBE JUST TAKE THE REQUEST???
-	    std::vector<char> response = 
-	      forward_request(request_obj.server.c_str(), port.c_str(), request_obj.request_buffer.data());
-	    sendall(response.data(), i, response.size());
-	  } 
-	  else{
-	    //PERFECT
-	    openTunnel(request_obj.server.c_str(), "443", i);
-	  }
-	} // END handle data from client
-      } // END got new incoming connection
-    } // END looping through file descriptors
+    user_fd =accept(listener_fd, (struct sockaddr *)&user_addr, &user_addr_len);
+    pthread_t *thrd = (pthread_t *) malloc(sizeof(pthread_t));
+    int err = pthread_create(thrd, NULL, &process_request, (void *)user_fd);
+    if(err){
+      cout << "error" << endl;
+      exit(-1);
+    }
   } // END for(;;)--and you thought it would never end!
-  
   
   return EXIT_SUCCESS;
   // sleep(30); /* wait 30 seconds */
