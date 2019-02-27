@@ -203,8 +203,9 @@ HTTPrequest receive_request(int user_fd) {
   return request_obj;
 }
 
-std::vector<char> forward_request(const char *hostname, const char *port,
-                                  const char *request) {
+int forward_request(const char *hostname, const char *port,
+                    const char *request) {
+
   int serverfd = open_client_socket(hostname, port);
   cout << "client connection successful attempting to send #bytes : "
        << strlen(request) << endl
@@ -219,13 +220,17 @@ std::vector<char> forward_request(const char *hostname, const char *port,
     num_to_send -= num_sent;
   }
 
+  return serverfd;
+}
+
+HTTPresponse receive_response(int server_fd) {
   // get HTTP header
   char buffer[1];
   std::vector<char> response;
   size_t line_break_count = 0;
   while (1) {
     // print_vec(response);
-    recv(serverfd, buffer, 1,
+    recv(server_fd, buffer, 1,
          MSG_WAITALL); // while loop to receive everything
     response.push_back(buffer[0]);
     if (buffer[0] == '\n') {
@@ -255,7 +260,7 @@ std::vector<char> forward_request(const char *hostname, const char *port,
 
     std::vector<char> msg_body2(content_len);
 
-    int recv_err = recv(serverfd, msg_body2.data(), content_len, MSG_WAITALL);
+    int recv_err = recv(server_fd, msg_body2.data(), content_len, MSG_WAITALL);
     if (recv_err == -1) {
       cerr << "recv failed" << endl;
       perror("recv");
@@ -274,7 +279,7 @@ std::vector<char> forward_request(const char *hostname, const char *port,
     // print_vec(response);
     // cout << response << endl;
   }
-  return response_object.response_buffer;
+  return response_object;
 }
 
 int sendall(const char *buff, int fd, int size) {
@@ -357,10 +362,15 @@ void *process_request(void *uid) {
     // IF GET OR POST WE FORWARD ALONG
     if (request_obj.http_method == "GET" || request_obj.http_method == "POST") {
       // FORWARD REQUEST MAYBE JUST TAKE THE REQUEST???
-      std::vector<char> response =
-          forward_request(request_obj.server.c_str(), port.c_str(),
-                          request_obj.request_buffer.data());
+      int server_fd = forward_request(request_obj.server.c_str(), port.c_str(),
+                                      request_obj.request_buffer.data());
+
+      HTTPresponse response_obj = receive_response(server_fd);
+
+      std::vector<char> response = response_obj.response_buffer;
+
       sendall(response.data(), user_fd, response.size());
+
     } else {
       // PERFECT
       openTunnel(request_obj.server.c_str(), "443", user_fd);
