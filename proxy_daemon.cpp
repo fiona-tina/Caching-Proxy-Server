@@ -32,7 +32,27 @@
 
 
 using namespace std;
+
+
 // need to use boost libraries -- see how/why
+
+
+/*
+int forward_connect(int fd1, int fd2) {
+  vector<char> data;
+  char buffer[1];
+  while (1) {
+    int size =
+        recv(fd1, buffer, 1, MSG_WAITALL); // while loop to receive everything
+    data.push_back(buffer[0]);
+    if (size == 0) {
+      break;
+    }
+  }
+  return 1;
+}
+*/
+
 
 int open_server_socket(char *hostname, char *port) {
   int fd;
@@ -219,34 +239,21 @@ std::vector<char> forward_request(const char *hostname, const char *port,
    
 }
 
-int forward_connect(int fd1, int fd2) {
-  vector<char> data;
-  char buffer[1];
-  while (1) {
-    int size =
-        recv(fd1, buffer, 1, MSG_WAITALL); // while loop to receive everything
-    data.push_back(buffer[0]);
-    if (size == 0) {
-      break;
-    }
-  }
-  return 1;
-}
 
 int sendall(const char *buff, int fd, int size) {
   int num_to_send = size;
   while (num_to_send > 0) {
-    cout << "bytes left to send : " << num_to_send << endl;
     int num_sent = send(fd, buff, num_to_send, 0);
     buff += num_sent;
     num_to_send -= num_sent;
   }
-  cout << "DONE SENDING" << endl;
   return 1;
 }
 
+//OPEN A TUNNEL FOR CONNECT
 void openTunnel(const char *hostname, const char *port, int user_fd) {
   int serverfd = open_client_socket(hostname, port);
+  
   int fdmax = serverfd;
   fd_set master;
   fd_set read_fds;
@@ -254,11 +261,12 @@ void openTunnel(const char *hostname, const char *port, int user_fd) {
   FD_ZERO(&read_fds);
   FD_SET(serverfd, &master);
   FD_SET(user_fd, &master);
-
+  
+  //SEND ACK TO FIREFOX THAT A CONNECTION HAS BEEN ESTABLISHED WITH THE ORIGIN SERVER
   string OK =
-      "HTTP/1.1 200 Connection Established\r\nConnection: close\r\n\r\n";
+    "HTTP/1.1 200 Connection Established\r\nConnection: close\r\n\r\n";
   sendall(OK.c_str(), user_fd, OK.length());
-
+  
   while (1) {
     read_fds = master;
     if ((select(fdmax + 1, &read_fds, NULL, NULL, NULL) == -1)) {
@@ -266,102 +274,41 @@ void openTunnel(const char *hostname, const char *port, int user_fd) {
       exit(4);
     }
     if (FD_ISSET(user_fd, &read_fds)) {
-      char buffer[2048];
       std::vector<char> v_buffer(2048);
-      memset(&buffer, 0, 2048);
+      //cout << "from client" << endl;
       int rec_size = recv(user_fd, v_buffer.data(), 2048, 0);
-      if (rec_size == -1)
-        perror("GOOG");
-      buffer[rec_size] = '\0';
-      cout << "from firefox " << rec_size << endl;
-      //print_vec(v_buffer);
-      if (rec_size == 0) {
-        break;
+      //cout << rec_size << endl;
+      if (rec_size == -1 | rec_size == 0){
+	break;
       }
-      // send(serverfd,buffer,strlen(buffer),0);
       sendall(v_buffer.data(), serverfd, rec_size);
-      // forward
     }
     if (FD_ISSET(serverfd, &read_fds)) {
-      char buffer[1024];
+      //cout << "from server" << endl;
       std::vector<char> v_buffer(2048);
-      memset(&buffer, 0, 1024);
       int rec_size = recv(serverfd, v_buffer.data(), 2048, 0);
-      if (rec_size == -1)
-        perror("GOOG");
-      buffer[rec_size] = '\0';
-      cout << "from google " << rec_size << endl;
-      //print_vec(v_buffer);
-      // send(serverfd,buffer,strlen(buffer),0);
-      sendall(v_buffer.data(), user_fd, rec_size);
-      if (rec_size == 0) {
-        break;
+      //cout << rec_size << endl;
+      if (rec_size == -1 | rec_size == 0){
+	break;
       }
-      // forward
+      sendall(v_buffer.data(), user_fd, rec_size);
     }
   }
-
-  // close(user_fd); //when we have multithreading
+  cout << "connect finished" << endl;
+  close(user_fd); //when we have multithreading
   close(serverfd);
 }
 
 int main(void) {
   Cache s_cache;
-
-  printf("hello! now in main\n\n"); // remove
-
-  // server socket -- bind to port (80)?
+  // listener socket -- bind to port (80)?
   char port[10] = HTTP_PORT;
   int listener_fd = open_server_socket(NULL, port);
   
   struct sockaddr_storage user_addr;
   socklen_t user_addr_len = sizeof(user_addr);
 
-  
-  // become a daemon
-  // ref: http://www.netzmafia.de/skripten/unix/linux-daemon-howto.html
 
-
-  // /* Our process ID and Session ID */
-  // pid_t pid, sid;
-
-  // /* Fork off the parent process */
-  // pid = fork();
-  // if (pid < 0) {
-  //   exit(EXIT_FAILURE);
-  // }
-  // /* If we got a good PID, then
-  //    we can exit the parent process. */
-  // if (pid > 0) {
-  //   exit(EXIT_SUCCESS);
-  // }
-
-  // /* Change the file mode mask */
-  // umask(0);
-
-  // /* Open any logs here */
-
-  // /* Create a new SID for the child process */
-  // sid = setsid();
-  // if (sid < 0) {
-  //   /* Log the failure */
-  //   exit(EXIT_FAILURE);
-  // }
-
-  // /* Change the current working directory */
-  // if ((chdir("/")) < 0) {
-  //   /* Log the failure */
-  //   exit(EXIT_FAILURE);
-  // }
-
-  // /* Close out the standard file descriptors */
-  // close(STDIN_FILENO);
-  // close(STDOUT_FILENO);
-  // close(STDERR_FILENO);
-
-  // /* Daemon-specific initialization goes here */
-
-  /* The Big Loop */
   fd_set master;
   fd_set read_fds;
   int fdmax;
@@ -371,189 +318,100 @@ int main(void) {
   FD_SET(listener_fd,&master);
   fdmax = listener_fd;
   
-  //int user_fd =
-  //  accept(listener_fd, (struct sockaddr *)&user_addr, &user_addr_len);
-  //if (user_fd == -1) {
-  //  perror("Error: failed to accept connection on socket\n");
-  //  exit(EXIT_FAILURE);
-  //}
-
-  
   for (;;) { // daemon loop
 
-    for(;;){
-      read_fds = master; // copy it
-      if (select(fdmax+1, &read_fds, NULL, NULL, NULL) == -1) {
-	perror("select");
-	exit(4);
-      }
 
-      // run through the existing connections looking for data to read
-      for(int i = 0; i <= fdmax; i++) {
-	if (FD_ISSET(i, &read_fds)) { // we got one!!
-	  if (i == listener_fd) {
-	    // handle new connections
-	    user_fd =accept(listener_fd, (struct sockaddr *)&user_addr, &user_addr_len);
-	    if (user_fd == -1) {
-	      perror("accept");
-	    } else {
-	      FD_SET(user_fd, &master); // add to master set
-	      if (user_fd > fdmax) {    // keep track of the max
-		fdmax = user_fd;
-	      }
-	      cout << "new connection" << endl;
-	    }
+    read_fds = master; // copy it
+    if (select(fdmax+1, &read_fds, NULL, NULL, NULL) == -1) {
+      perror("select");
+      exit(4);
+    }
+    
+    // run through the existing connections looking for data to read
+    for(int i = 0; i <= fdmax; i++) {
+      cout << "not blocked" << endl;
+      if (FD_ISSET(i, &read_fds)) { // we got one!!
+	if (i == listener_fd) {
+	  // handle new connections
+	  user_fd =accept(listener_fd, (struct sockaddr *)&user_addr, &user_addr_len);
+	  if (user_fd == -1) {
+	    perror("accept");
 	  } else {
-	    cout << "incoming" << endl;
-	    cout << "DOING SOMETHING1" << endl;
-    
-	    char http_req_buf[1];
-	    std::vector<char> request_header;
-	    size_t line_break_count = 0;
-	    int cont = 1;
-	    while (1) {
-	      
-	      
-	      // print_vec(request_header);
-	      cout << "DOING SOMETHING2" << endl;
-	      int rec = recv(i, http_req_buf, 1,
-			     MSG_WAITALL); // while loop to receive everything
-	      if(rec == 0){
-		cont = 0;
-		break;
-	      }
-	      cout << rec << endl;
-	      cout << "DOING SOMETHING3" << endl;
-	      
-	      request_header.push_back(http_req_buf[0]);
-	      if (http_req_buf[0] == '\n') {
-		// cout << "newline" << endl;
-		// print_vec(request_header);
-		string str(request_header.end() - 4, request_header.end());
-		// cout << "\"" << str << "\"" << endl;
-		// break;
-		if (str == "\r\n\r\n") {
-		  if (line_break_count == 0) {
-		    break;
-		  }
-		  line_break_count++;
+	    FD_SET(user_fd, &master); // add to master set
+	    if (user_fd > fdmax) {    // keep track of the max
+	      fdmax = user_fd;
+	    }
+	    cout << "new connection" << endl;
+	  }
+	} else {
+	  cout << "incoming" << endl;
+	  char http_req_buf[1];
+	  std::vector<char> request_header;
+	  size_t line_break_count = 0;
+	  int cont = 1;
+	  //MARK : ABSTRACT THIS INTO RECEIVE REQUEST
+	  while (1) {
+	    int rec = recv(i, http_req_buf, 1,
+			   MSG_WAITALL); // while loop to receive everything
+	    if(rec == 0){
+	      cont = 0;
+	      break;
+	    }
+	    request_header.push_back(http_req_buf[0]);
+	    if (http_req_buf[0] == '\n') {
+	      string str(request_header.end() - 4, request_header.end());
+	      if (str == "\r\n\r\n") {
+		if (line_break_count == 0) {
+		  break;
 		}
+		line_break_count++;
 	      }
 	    }
-	    if(cont == 0){
-	      close(i); // bye!
-	      FD_CLR(i, &master); // remove from master set
-	      continue;
+	  }
+	  if(cont == 0){
+	    close(i); // bye!
+	    FD_CLR(i, &master); // remove from master set
+	    continue;
+	  }
+	  //MARK END: ABSTRACT THIS INTO RECEIVE REQUEST
+
+	  //MARK : PUT THIS IN ABOVE FUNCTION 
+	  HTTPrequest request_obj;
+	  request_obj.request_buffer = request_header;
+	  request_obj.set_fields();
+	  int content_len = request_obj.get_content_length();
+	  if(content_len >= 0){
+	    cout << "len = " << content_len << endl;
+	    std::vector<char> msg_body(content_len);
+	    int recv_err = recv(i, msg_body.data(), content_len, MSG_WAITALL);
+	    if (recv_err == -1) {
+	      cerr << "recv failed" << endl;
+	      perror("recv");
 	    }
-	    
-	    
-	    print_vec(request_header);
-	    
-	    HTTPrequest request_obj;
-	    request_obj.request_buffer = request_header;
-	    //print_vec(request_obj.request_buffer); // remove
-	    
-	    request_obj.set_fields();
-	    int content_len = request_obj.get_content_length();
-	    if(content_len >= 0){
-	      cout << "len = " << content_len << endl;
-	      
-	      std::vector<char> msg_body(content_len);
-      
-	      int recv_err = recv(i, msg_body.data(), content_len, MSG_WAITALL);
-	      if (recv_err == -1) {
-		cerr << "recv failed" << endl;
-		perror("recv");
-	      }
-	      cout << "printing msg" << endl;
-	      
-	      //print_vec(msg_body);
-	      
-	      request_obj.request_buffer.insert(request_obj.request_buffer.end(),
-						msg_body.begin(), msg_body.end());
-	      
-	      //print_vec(request_obj.request_buffer);
-	    }
-
-    
-
-	    // send(i, buffer, sizeof buffer, 0);
-	    
-	    // pre-spawn threads to handle requests
-
-	    // listen to HTTP requests
-	    
-	    // parse HTTP requests -- ref RFC
-
-	    // if malformed request then send error back (400)
-	    
-	    // look in cache -- using files?
-	    
-	    // build HTTP response -- ref RFC
-
-	    // send back HTTP response -- html/js/css/txt, etc. files stored in cache
-	    // plus status code
-    
-
-    
-	    //string host = "www.youtube.com";
-	    string port = "80";
-	    //string request = "CONNECT / HTTP/1.1\r\nHost: youtube.com\r\n\r\n";
-	    //    cout << request << endl;
-	    
-	    // cache lookup
-	    cout << request_obj.http_method << endl;
-	    if (request_obj.http_method == "GET"  ||  request_obj.http_method == "POST") {
-	      std::vector<char> response = 
-		forward_request(request_obj.server.c_str(), port.c_str(), request_obj.request_buffer.data());
-	      sendall(response.data(), i, response.size());
-	      //openTunnel(request_obj.server.c_str(), "80", i);
-	    } 
-	    else{
-	      openTunnel(request_obj.server.c_str(), "443", i);
-	    }
-      
-	    
-      //cout << response << endl;
-      
-      // if we receive an invalid response (502)
-
-      // adding to cache
-      // s_cache.insert(request, response);
-	    cout << "Response has been cached." << endl;
-      //s_cache.print();
-    
-      //send(i, resp_str.c_str(), resp_str.length(), 0);
-
-	  } // END handle data from client
-	} // END got new incoming connection
-      } // END looping through file descriptors
-    } // END for(;;)--and you thought it would never end!
-    
-    // accept connection here
-
-    // spawn thread to handle request from user_fd
-
-    // recv the HTTP REQ
-    // char buffer[512];
-    // memset(&buffer, 0, sizeof buffer);
-
-    // ssize_t read_id;
-
-    // read_id = recv(user_fd, buffer, sizeof(buffer), 0); // MSG_WAITALL
-    // buffer[read_id] = '\0';
-    // printf("msg recvd:%s", buffer);
-
-    // get HTTP header
-
-    
-    
-    
-    
-  }
-
-    // sleep(30); /* wait 30 seconds */
-
-
+	    cout << "printing msg" << endl;
+	    request_obj.request_buffer.insert(request_obj.request_buffer.end(),
+					      msg_body.begin(), msg_body.end());
+	  }
+	  //MARK : PUT THIS IN ABOVE FUNCTION
+	  string port = "80";
+	  cout << request_obj.http_method << endl;
+	  //IF GET OR POST WE FORWARD ALONG
+	  if (request_obj.http_method == "GET"  ||  request_obj.http_method == "POST") {
+	    //FORWARD REQUEST MAYBE JUST TAKE THE REQUEST???
+	    std::vector<char> response = 
+	      forward_request(request_obj.server.c_str(), port.c_str(), request_obj.request_buffer.data());
+	    sendall(response.data(), i, response.size());
+	  } 
+	  else{
+	    //PERFECT
+	    openTunnel(request_obj.server.c_str(), "443", i);
+	  }
+	} // END handle data from client
+      } // END got new incoming connection
+    } // END looping through file descriptors
+  } // END for(;;)--and you thought it would never end!
+  
+  
   return EXIT_SUCCESS;
+  // sleep(30); /* wait 30 seconds */
 }
