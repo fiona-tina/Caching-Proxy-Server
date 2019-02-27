@@ -163,11 +163,10 @@ int HTTPrequest::set_fields() {
   host = helper_request.substr(0, helper_request.find("\r\n"));
   this->server = host;
   size_t position_three = host.find(":");
-  if((position_three != string::npos)){
-    host = host.substr(0,position_three);      
+  if ((position_three != string::npos)) {
+    host = host.substr(0, position_three);
     this->server = host;
   }
-
 
   // The case where port num is different than 443 or 80
   string actual_request(request_buffer.data());
@@ -185,23 +184,18 @@ int HTTPrequest::set_fields() {
   return 0;
 }
 
+/* string HTTPrequest::get_cache_control(){ */
+/*   string cache_control; */
+/*   string request(response_buffer.data()); */
+/*   size_t position = request.find("Cache-Control: "); */
+/*   if(position != string::npos){ */
+/*     request = request.substr(position); */
+/*     int position_two = request.find("\r\n"); */
+/*     string date = request.substr(0, position_two); */
+/*   } */
 
-string HTTPrequest::get_cache_control(){
-  string cache_control;
-  string request(response_buffer.data());
-  size_t position = request.find("Cache-Control: ");
-  if(position != string::npos){
-    request = request.substr(position);
-    int position_two = request.find("\r\n");
-    string date = request.substr(0, position_two);
-  }
+/*   return cache_control; */
 
-  return cache_control;
-
-
-
-}
-
-
+/* } */
 
 #endif
