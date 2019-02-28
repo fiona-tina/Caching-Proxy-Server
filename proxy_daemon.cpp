@@ -253,9 +253,9 @@ HTTPrequest receive_request(int user_fd) {
   // cout << request_obj.get_field_value("CACHE-CONTROL") << endl;
 
   // // DELETE
-  // if (request_obj.set_fields() == -1) {
-  //   return request_obj;
-  // }
+  if (request_obj.set_fields() == -1) {
+    return request_obj;
+  }
   // DELETE
 
   time_t now = time(0);
