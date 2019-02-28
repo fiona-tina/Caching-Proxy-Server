@@ -4,11 +4,11 @@
  * Prathikshaa Rangarajan (pr109), Rijish Ganguly (rg239), David Laub (dgl9)
  */
 
-
-
 #ifndef _CACHE_H
 #define _CACHE_H
 
+#include "HTTPrequest.h"
+#include "HTTPresponse.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -20,18 +20,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
+#include <time.h>
 #include <unordered_map>
 #include <vector>
-#include "HTTPresponse.h"
-#include "HTTPrequest.h"
-
-
 
 using namespace std;
 
-typedef std::unordered_map<string, std::vector<char> > map;
-typedef std::unordered_map<string, HTTPrequest > reqMap;
-typedef std::unordered_map<string, HTTPresponse > respMap;
+typedef std::unordered_map<string, std::vector<char>> map;
+typedef std::unordered_map<string, HTTPrequest> reqMap;
+typedef std::unordered_map<string, HTTPresponse> respMap;
+typedef std::unordered_map<string, time_t> timeMap;
 
 class Cache {
 
@@ -41,11 +39,14 @@ public:
   map my_cache;
   reqMap request_cache;
   respMap response_cache;
+  timeMap time_cache;
+
   string MRU;
   size_t size;
   size_t max_size;
   void print(void);
-  ssize_t insert(string key, vector<char> val, HTTPrequest request, HTTPresponse response);
+  ssize_t insert(string key, vector<char> val, HTTPrequest request,
+                 HTTPresponse response);
   ssize_t evictNMRU(void);
   ssize_t evict(string key);
   vector<char> lookup(string key);
@@ -74,13 +75,19 @@ void Cache::print(void) {
   return;
 }
 
-ssize_t Cache::insert(string key, vector<char> val, HTTPrequest request, HTTPresponse response) {
+ssize_t Cache::insert(string key, vector<char> val, HTTPrequest request,
+                      HTTPresponse response) {
   if (this->size == this->max_size) {
     evictNMRU();
   }
   this->my_cache[key] = val;
   request_cache[key] = request;
+  time_cache[key] = time(NULL);
+
+  //  request_cache[key].fv_map["REQ_TIME"] = time(NULL); // time
+
   response_cache[key] = response;
+
   this->size++;
   this->MRU = key;
   return 0;
@@ -92,10 +99,11 @@ ssize_t Cache::evictNMRU(void) {
       this->my_cache.erase(it.first);
       this->response_cache.erase(it.first);
       this->request_cache.erase(it.first);
+      this->time_cache.erase(it.first);
       break;
     }
   }
-  
+
   this->size--;
   return 0;
 }
@@ -106,6 +114,7 @@ ssize_t Cache::evict(string key) {
       this->my_cache.erase(it.first);
       this->response_cache.erase(it.first);
       this->request_cache.erase(it.first);
+      this->time_cache.erase(it.first);
       break;
     }
   }

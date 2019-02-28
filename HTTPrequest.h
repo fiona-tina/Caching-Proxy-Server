@@ -4,27 +4,27 @@
  * Prathikshaa Rangarajan (pr109), Rijish Ganguly (rg239), David Laub (dgl9)
  */
 
-
-
 #ifndef _HTTPREQUEST_H
 #define _HTTPREQUEST_H
+
+#include <algorithm>
 #include <iostream>
-#include <sstream>
 #include <istream>
+#include <sstream>
 #include <string>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 #define MAX_BUFFER 65536
 
 using namespace std;
 
-typedef std::unordered_map<std::string,std::string> stringmap;
+typedef std::unordered_map<std::string, std::string> stringmap;
 
 class HTTPrequest {
 
 public:
   vector<char> request_buffer;
-  stringmap fv_map; //field value mapping
+  stringmap fv_map; // field value mapping
   string request_line;
   string server;
   string http_method;
@@ -54,32 +54,32 @@ public:
   ~HTTPrequest(){};
 };
 
-
 int HTTPrequest::build_fv_map(void) {
-  string request(request_buffer.data()); 
-  std::transform(request.begin(), request.end(), request.begin(), std::ptr_fun<int, int>(std::toupper));
+  string request(request_buffer.data());
+  std::transform(request.begin(), request.end(), request.begin(),
+                 std::ptr_fun<int, int>(std::toupper));
 
-  //mark stackoverflow
+  // mark stackoverflow
   std::istringstream split(request);
   std::vector<std::string> lines;
-  for (std::string each; std::getline(split, each, '\n'); lines.push_back(each));
-  //mark end
-  
-  for(auto i : lines){
+  for (std::string each; std::getline(split, each, '\n'); lines.push_back(each))
+    ;
+  // mark end
+
+  for (auto i : lines) {
     size_t pos = i.find(": ");
-    if (pos!=std::string::npos){
-      fv_map[i.substr(0,pos)] = i.substr(pos + 2);
-      //string temp = get_field_value(i.substr(0,pos));
-      //cout << fv_map[i.substr(0, pos)] << temp << endl;
+    if (pos != std::string::npos) {
+      fv_map[i.substr(0, pos)] = i.substr(pos + 2);
+      // string temp = get_field_value(i.substr(0,pos));
+      // cout << fv_map[i.substr(0, pos)] << temp << endl;
     }
   }
   cout << request << endl;
   return 1;
 }
 
-
-string HTTPrequest::get_field_value(string field){
-  if(fv_map.find(field) == fv_map.end()){
+string HTTPrequest::get_field_value(string field) {
+  if (fv_map.find(field) == fv_map.end()) {
     string fail;
     cout << "FAIL" << endl;
     return fail;
@@ -230,18 +230,17 @@ int HTTPrequest::set_fields() {
   return 0;
 }
 
-string HTTPrequest::get_cache_control(){ 
-  string cache_control; 
-    string request(request_buffer.data()); 
-    size_t position = request.find("Cache-Control: "); 
-    if(position != string::npos){ 
-     request = request.substr(position); 
-    int position_two = request.find("\r\n"); 
-     string date = request.substr(0, position_two); 
-   } 
+string HTTPrequest::get_cache_control() {
+  string cache_control;
+  string request(request_buffer.data());
+  size_t position = request.find("Cache-Control: ");
+  if (position != string::npos) {
+    request = request.substr(position);
+    int position_two = request.find("\r\n");
+    string date = request.substr(0, position_two);
+  }
 
-  return cache_control; 
-
- } 
+  return cache_control;
+}
 
 #endif

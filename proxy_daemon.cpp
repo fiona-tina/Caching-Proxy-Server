@@ -16,6 +16,7 @@
 #include "HTTPrequest.h"
 #include "HTTPresponse.h"
 #include "cache.h"
+#include "proxy_daemon.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -52,156 +53,149 @@ int forward_connect(int fd1, int fd2) {
 
 Cache s_cache(100);
 
+bool no_cache(HTTPrequest request_obj) {
 
-HTTPresponse deal_with_cache(HTTPrequest request){
-
-
-  if(request["cache-control"] == "no store"){
-    forward();
-    return;
+  string cc = request_obj.get_field_value("CACHE-CONTROL");
+  if ((cc.find("NO-STORE") != std::string::npos) ||
+      (cc.find("PRIVATE") != std::string::npos)) {
+    return true;
   }
-  else{
-    //check cache
-    response = s_cache[request];
-    //if its not in the cache forward
-    if(response is null){
-      forward();
-    }
-    //otherwise check freshness
-    else{
-      fresh = check_fresh();
-      //if not fresh validate
-      if(not fresh){
-	validate(etag,age...)
-      }
-      else{
-	need_validation = check_if_needs_validation();
-	//if we can check cache and its fresh and doesnt need validation send back response
-	if(not need_validation){
-	  return response
-	}
-	else{
-	  //use ETAG
-	  validate(etag,age,....,)
-	}
-      }
-    }
-  }
-  
 
-
+  return false;
 }
 
+bool no_cache(HTTPresponse request_obj) { // response
 
-
-int open_server_socket(char *hostname, char *port) {
-  int fd;
-  int status;
-  struct addrinfo hints;
-  struct addrinfo *addrlist, *rm_it;
-
-  memset(&hints, 0, sizeof(hints));
-  hints.ai_family = AF_UNSPEC;
-  hints.ai_socktype = SOCK_STREAM;
-  hints.ai_flags = AI_PASSIVE;
-
-  status = getaddrinfo(hostname, port, &hints, &addrlist);
-  if (status != 0) {
-    perror("getaddrinfo:");
-    return -1;
+  string cc = request_obj.get_field_value("CACHE-CONTROL");
+  if ((cc.find("NO-STORE") != std::string::npos) ||
+      (cc.find("PRIVATE") != std::string::npos)) {
+    return true;
   }
 
-  for (rm_it = addrlist; rm_it != NULL; rm_it = rm_it->ai_next) {
-    fd = socket(rm_it->ai_family, rm_it->ai_socktype, rm_it->ai_protocol);
-
-    if (fd == -1) {
-      continue;
-    }
-
-    int yes = 1;
-    if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
-      perror("setsockopt:");
-      return -1;
-    }
-
-    // bind
-    int status = ::bind(fd, rm_it->ai_addr, rm_it->ai_addrlen);
-
-    if (status == 0) {
-      std::cout << "Successfully bound to port " << port << std::endl; // log
-      break;
-    }
-
-    // bind failed
-    close(fd);
-  }
-  if (rm_it == NULL) {
-    // bind failed
-    fprintf(stderr, "Error: socket bind failed\n");
-    return -1;
-    // exit(EXIT_FAILURE);
-  }
-
-  if (listen(fd, LISTEN_BACKLOG) == -1) {
-    perror("listen:");
-    return -1;
-  }
-
-  freeaddrinfo(addrlist);
-
-  return fd;
+  return false;
 }
 
-int open_client_socket(const char *hostname, const char *port) {
-  cout << hostname << " " << port << endl;
-  int fd;
-  int status;
-  struct addrinfo hints;
-  struct addrinfo *addrlist, *rm_it;
+string getfromCC(string cc, string field) {
+  size_t ptr;
+  string val;
+  if ((ptr = cc.find(field)) != std::string::npos) {
+    val = cc.substr(ptr + field.length()); //, cc.find(","));
+  }
+  return val;
+}
 
-  memset(&hints, 0, sizeof(hints));
-  hints.ai_family = AF_UNSPEC;
-  hints.ai_socktype = SOCK_STREAM;
-  hints.ai_flags = AI_PASSIVE;
+bool is_fresh(HTTPrequest request_obj) {
+  //
+  string cc = request_obj.get_field_value("CACHE-CONTROL"); // max_age
 
-  status = getaddrinfo(hostname, port, &hints, &addrlist);
-  if (status != 0) {
-    perror("getaddrinfo:");
-    return -1;
+  //  time_t
+  time_t req_time = s_cache.time_cache[request_obj.request_line];
+  string max_age_str = getfromCC(cc, "MAX_AGE=");
+  size_t max_age = str_to_num(max_age_str.c_str());
+
+  if (difftime(time(NULL), req_time) < max_age) {
+    return true;
   }
 
-  for (rm_it = addrlist; rm_it != NULL; rm_it = rm_it->ai_next) {
-    fd = socket(rm_it->ai_family, rm_it->ai_socktype, rm_it->ai_protocol);
-    // cout << rm_it->ai_addr << endl;
-    if (fd == -1) {
-      continue;
-    }
+  return false; // change;
+}
 
-    int yes = 1;
-    if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
-      perror("setsockopt:");
-      return -1;
-    }
+bool has_validate_tags(HTTPrequest request_obj) {
 
-    if (connect(fd, rm_it->ai_addr, rm_it->ai_addrlen) != -1) {
-      // close(fd);
-      // perror("client: connect");
-      break;
-    }
-    // bind failed
-    close(fd);
+  string cc = request_obj.get_field_value("CACHE-CONTROL");
+  if ((cc.find("NO-CACHE") != std::string::npos) ||
+      (cc.find("MUST-REVALIDATE") != std::string::npos)) {
+    return true;
   }
 
-  if (rm_it == NULL) {
-    // bind failed
-    fprintf(stderr, "Error: connect failed\n");
-    return -1;
-    // exit(EXIT_FAILURE);
+  return false;
+}
+
+HTTPresponse forward(HTTPrequest request_obj) {
+  string port = "80"; // check HTTPrequest obj
+  int server_fd = forward_request(request_obj.server.c_str(), port.c_str(),
+                                  request_obj.request_buffer.data());
+
+  return receive_response(server_fd);
+}
+
+HTTPresponse validate(HTTPrequest request_obj) {
+  // cache
+  string request_line = request_obj.request_line; // check?;
+
+  // etag
+  string etag = s_cache.response_cache[request_line].get_field_value("ETAG");
+
+  // last modified
+  string last_modified =
+      s_cache.response_cache[request_line].get_field_value("LAST-MODIFIED");
+
+  string req = build_validation_req(request_line, etag, last_modified);
+
+  string port = "80"; // check HTTPrequest obj
+  // make request to server
+  int server_fd =
+      forward_request(request_obj.server.c_str(), port.c_str(), req.c_str());
+
+  HTTPresponse response_obj = receive_response(server_fd);
+
+  // 304 ok -- return from cache
+
+  // full response -- replace in cache
+
+  return s_cache.response_cache[request_line]; // todo: fix
+}
+
+string build_validation_req(string request_line, string etag,
+                            string last_modified) {
+  std::stringstream ss;
+  ss << request_line << std::endl
+     << "If-None-Match: " << etag << std::endl
+     << "If-Modified-Since: " << last_modified;
+  string req = ss.str();
+  return req;
+}
+
+HTTPresponse deal_with_cache(HTTPrequest request) {
+
+  if (no_cache(request)) { // no_cache boolean
+    return forward(request);
+
+  } else {
+    // check cache
+    std::vector<char> resp = s_cache.lookup(request.request_line);
+
+    // if its not in the cache forward
+    if (resp.size() == 0) {
+      HTTPresponse response = forward(request);
+
+      if (no_cache(response)) {
+        return response;
+      } else {
+        s_cache.insert(request.request_line, resp, request, response);
+        return response;
+      }
+    }
+    // otherwise check freshness
+    else {
+      // if not fresh validate
+      if (!is_fresh(request)) {
+        return validate(request);
+      } else {
+
+        // if we can check cache and its fresh and doesnt need validation send
+        // back response
+        if (!has_validate_tags(request)) {
+
+          HTTPresponse response = s_cache.response_cache[request.request_line];
+          return response;
+        } else {
+          // use ETAG
+          return validate(request);
+        }
+      }
+    }
   }
-
-  freeaddrinfo(addrlist);
-
-  return fd;
 }
 
 HTTPrequest receive_request(int user_fd) {
@@ -296,14 +290,15 @@ HTTPresponse receive_response(int server_fd) {
       }
     }
   }
-  
+
   std::string resp_str(response.begin(), response.end());
   // print_vec(response);
   HTTPresponse response_object;
   response_object.response_buffer = response;
   response_object.build_fv_map();
   cout << resp_str << endl;
-  cout << "CACHE CONTROL" << response_object.get_field_value("CACHE-CONTROL") << endl;
+  cout << "CACHE CONTROL" << response_object.get_field_value("CACHE-CONTROL")
+       << endl;
   // print_vec(response_object.response_buffer); // remove
 
   int content_len = response_object.get_content_length();
@@ -332,16 +327,6 @@ HTTPresponse receive_response(int server_fd) {
     // cout << response << endl;
   }
   return response_object;
-}
-
-int sendall(const char *buff, int fd, int size) {
-  int num_to_send = size;
-  while (num_to_send > 0) {
-    int num_sent = send(fd, buff, num_to_send, 0);
-    buff += num_sent;
-    num_to_send -= num_sent;
-  }
-  return 1;
 }
 
 // OPEN A TUNNEL FOR CONNECT
@@ -414,9 +399,9 @@ void *process_request(void *uid) {
     // IF GET OR POST WE FORWARD ALONG
     if (request_obj.http_method == "GET" || request_obj.http_method == "POST") {
       // FORWARD REQUEST MAYBE JUST TAKE THE REQUEST???
-      
-      HTTPresponse response_obj = deal_with_cache(request);
-      
+
+      HTTPresponse response_obj = deal_with_cache(request_obj);
+
       /*
       int server_fd = forward_request(request_obj.server.c_str(), port.c_str(),
                                       request_obj.request_buffer.data());
@@ -425,7 +410,8 @@ void *process_request(void *uid) {
       std::vector<char> response = response_obj.response_buffer;
       */
 
-      sendall(response.data(), user_fd, response.size());
+      sendall(response_obj.response_buffer.data(), user_fd,
+              response_obj.response_buffer.size());
 
     } else {
       // PERFECT
