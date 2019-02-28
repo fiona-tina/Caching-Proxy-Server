@@ -74,14 +74,14 @@ int HTTPrequest::build_fv_map(void) {
       // cout << fv_map[i.substr(0, pos)] << temp << endl;
     }
   }
-  cout << request << endl;
+  //cout << request << endl;
   return 1;
 }
 
 string HTTPrequest::get_field_value(string field) {
   if (fv_map.find(field) == fv_map.end()) {
     string fail;
-    cout << "FAIL" << endl;
+    //cout << "FAIL" << endl;
     return fail;
   }
   return fv_map[field];

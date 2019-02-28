@@ -51,7 +51,8 @@ int forward_connect(int fd1, int fd2) {
 }
 */
 
-Cache s_cache(100);
+Cache s_cache(10000);
+size_t ID = 0;
 
 bool no_cache(HTTPrequest request_obj) {
 
@@ -225,21 +226,21 @@ HTTPrequest receive_request(int user_fd) {
   HTTPrequest request_obj;
   request_obj.request_buffer = request_header;
   request_obj.build_fv_map();
-  cout << request_obj.get_field_value("PROXY-CONNECTION") << endl;
-  cout << request_obj.get_field_value("CONNECTION") << endl;
-  cout << request_obj.get_field_value("CACHE-CONTROL") << endl;
+  //cout << request_obj.get_field_value("PROXY-CONNECTION") << endl;
+  //cout << request_obj.get_field_value("CONNECTION") << endl;
+  //cout << request_obj.get_field_value("CACHE-CONTROL") << endl;
   request_obj.set_fields();
 
   int content_len = request_obj.get_content_length();
   if (content_len >= 0) {
-    cout << "len = " << content_len << endl;
+    //cout << "len = " << content_len << endl;
     std::vector<char> msg_body(content_len);
     int recv_err = recv(user_fd, msg_body.data(), content_len, MSG_WAITALL);
     if (recv_err == -1) {
       cerr << "recv failed" << endl;
       perror("recv");
     }
-    cout << "printing msg" << endl;
+    //cout << "printing msg" << endl;
     request_obj.request_buffer.insert(request_obj.request_buffer.end(),
                                       msg_body.begin(), msg_body.end());
   }
@@ -250,13 +251,13 @@ int forward_request(const char *hostname, const char *port,
                     const char *request) {
 
   int serverfd = open_client_socket(hostname, port);
-  cout << "client connection successful attempting to send #bytes : "
-       << strlen(request) << endl
-       << request << endl;
+  //cout << "client connection successful attempting to send #bytes : "
+  //     << strlen(request) << endl
+  //     << request << endl;
 
   int num_to_send = strlen(request);
   while (num_to_send > 0) {
-    cout << "bytes left to send : " << num_to_send << endl;
+    //cout << "bytes left to send : " << num_to_send << endl;
     int num_sent = send(serverfd, request, num_to_send,
                         0); // while loop to send everything
     request += num_sent;
@@ -296,14 +297,14 @@ HTTPresponse receive_response(int server_fd) {
   HTTPresponse response_object;
   response_object.response_buffer = response;
   response_object.build_fv_map();
-  cout << resp_str << endl;
-  cout << "CACHE CONTROL" << response_object.get_field_value("CACHE-CONTROL")
-       << endl;
+  //cout << resp_str << endl;
+  //cout << "CACHE CONTROL" << response_object.get_field_value("CACHE-CONTROL")
+  //     << endl;
   // print_vec(response_object.response_buffer); // remove
 
   int content_len = response_object.get_content_length();
   if (content_len >= 0) {
-    cout << "len = " << content_len << endl;
+    //cout << "len = " << content_len << endl;
 
     std::vector<char> msg_body2(content_len);
 
@@ -312,16 +313,16 @@ HTTPresponse receive_response(int server_fd) {
       cerr << "recv failed" << endl;
       perror("recv");
     }
-    cout << "printing msg" << endl;
+    //cout << "printing msg" << endl;
 
     // print_vec(msg_body2);
 
     response_object.response_buffer.insert(
         response_object.response_buffer.end(), msg_body2.begin(),
         msg_body2.end());
-    cout << "printing msg with body" << endl;
+    //cout << "printing msg with body" << endl;
     // print_vec(response_object.response_buffer);
-    cout << "Successful Receive" << endl;
+    //cout << "Successful Receive" << endl;
     // error checking
     // print_vec(response);
     // cout << response << endl;
@@ -374,28 +375,26 @@ void openTunnel(const char *hostname, const char *port, int user_fd) {
       sendall(v_buffer.data(), user_fd, rec_size);
     }
   }
-  cout << "connect finished" << endl;
+  //cout << "connect finished" << endl;
   close(user_fd); // when we have multithreading
   close(serverfd);
 }
 
 void *process_request(void *uid) {
-  cout << (long)uid << endl;
-
+  //cout << (long)uid << endl;
   long user_fd = (long)uid;
   if (user_fd == -1) {
     perror("accept");
   }
 
-  cout << "new connection" << endl;
+  //cout << "new connection" << endl;
 
-  cout << "incoming" << endl;
+  //cout << "incoming" << endl;
   while (1) {
-
     HTTPrequest request_obj = receive_request(user_fd);
 
     string port = "80";
-    cout << request_obj.http_method << endl;
+    //cout << request_obj.http_method << endl;
     // IF GET OR POST WE FORWARD ALONG
     if (request_obj.http_method == "GET" || request_obj.http_method == "POST") {
       // FORWARD REQUEST MAYBE JUST TAKE THE REQUEST???

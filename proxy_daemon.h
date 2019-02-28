@@ -1,5 +1,5 @@
 #ifndef __PROXY_H_
-#define __PROXY_H
+#define __PROXY_H_
 
 #include "HTTPrequest.h"
 #include "HTTPresponse.h"
@@ -76,7 +76,7 @@ int open_server_socket(char *hostname, char *port) {
     int status = ::bind(fd, rm_it->ai_addr, rm_it->ai_addrlen);
 
     if (status == 0) {
-      std::cout << "Successfully bound to port " << port << std::endl; // log
+      //std::cout << "Successfully bound to port " << port << std::endl; // log
       break;
     }
 
@@ -101,7 +101,7 @@ int open_server_socket(char *hostname, char *port) {
 }
 
 int open_client_socket(const char *hostname, const char *port) {
-  cout << hostname << " " << port << endl;
+  //cout << hostname << " " << port << endl;
   int fd;
   int status;
   struct addrinfo hints;
