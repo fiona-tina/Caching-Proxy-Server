@@ -127,10 +127,10 @@ ssize_t Cache::evict(string key) {
 
 vector<char> Cache::lookup(string key) {
   // return error if Cache Miss
-  if (this->my_cache.find(key) == this->my_cache.end()) {
-    vector<char> fail;
-    return fail; // return ERROR
-  }
+  /* if (this->my_cache.find(key) == this->my_cache.end()) { */
+  /*   vector<char> fail; */
+  /*   return fail; // return ERROR */
+  /* } */
   return this->my_cache[key];
 }
 

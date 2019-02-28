@@ -20,6 +20,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <fstream>
 #include <netdb.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -33,12 +34,14 @@
 
 using namespace std;
 
-Cache s_cache(10000);
+Cache s_cache(10000000);
 size_t ID = 0;
 __thread size_t myID = 0;
 
 static pthread_mutex_t id_lock;
-// static pthread_mutex_t cache_lock;
+static pthread_mutex_t cache_lock;
+
+ofstream outfile;
 
 // need to use boost libraries -- see how/why
 
@@ -101,8 +104,8 @@ bool is_fresh(HTTPrequest request_obj) {
   if (difftime(time(NULL), req_time) < max_age) {
     return true;
   }
-  cout << myID << ": in cache, but expired at " << request_obj.get_field_value("EXPIRES") << endl;
-	
+  cout << myID << ": in cache, but expired at "
+       << request_obj.get_field_value("EXPIRES") << endl;
 
   return false; // change;
 }
@@ -174,32 +177,43 @@ HTTPresponse deal_with_cache(HTTPrequest request) {
 
     // if its not in the cache forward
     if (resp.size() == 0) {
-      HTTPresponse response = forward(request);
+
+      outfile << myID << ": not in cache" << endl;
       cout << myID << ": not in cache" << endl;
-      if (no_cache(response)) {
-        return response;
-      } else {
-        s_cache.insert(request.request_line, resp, request, response);
-        return response;
-      }
+
+      // cout << "Cache\n" << endl;
+      // s_cache.print();
+
+      HTTPresponse response = forward(request);
+      // if (no_cache(response)) {
+      //   return response;
+      // } else {
+      pthread_mutex_lock(&cache_lock);
+      s_cache.insert(request.request_line, resp, request, response);
+      pthread_mutex_unlock(&cache_lock);
+      return response;
+      // }
     }
     // otherwise check freshness
     else {
+      outfile << myID << ": HIT in cache" << endl;
+      cout << myID << ": HIT in cache" << endl;
+
       // if not fresh validate
       if (!is_fresh(request)) {
-	return validate(request);
+        return validate(request);
       } else {
 
         // if we can check cache and its fresh and doesnt need validation send
         // back response
         if (!has_validate_tags(request)) {
-	  cout << myID << ": in cache, valid" << endl;
+          outfile << myID << ": in cache, valid" << endl;
+          cout << myID << ": in cache, valid" << endl;
           HTTPresponse response = s_cache.response_cache[request.request_line];
           return response;
         } else {
           // use ETAG
-	  
-	  
+
           return validate(request);
         }
       }
@@ -237,10 +251,17 @@ HTTPrequest receive_request(int user_fd) {
   // cout << request_obj.get_field_value("PROXY-CONNECTION") << endl;
   // cout << request_obj.get_field_value("CONNECTION") << endl;
   // cout << request_obj.get_field_value("CACHE-CONTROL") << endl;
-  request_obj.set_fields();
+
+  // // DELETE
+  // if (request_obj.set_fields() == -1) {
+  //   return request_obj;
+  // }
+  // DELETE
+
   time_t now = time(0);
 
-  cout << myID << ": \"" << request_obj.request_line << "\" from " << request_obj.server << " @ " << ctime(&now) << endl;
+  outfile << myID << ": \"" << request_obj.request_line << "\" from "
+          << request_obj.server << " @ " << ctime(&now) << endl;
   int content_len = request_obj.get_content_length();
   if (content_len >= 0) {
     // cout << "len = " << content_len << endl;
@@ -410,6 +431,12 @@ void *process_request(void *uid) {
   while (1) {
     HTTPrequest request_obj = receive_request(user_fd);
 
+    // DELETE
+    if (request_obj.set_fields() == -1) {
+      continue;
+    }
+    // DELETE
+
     string port = "80";
     // cout << request_obj.http_method << endl;
     // IF GET OR POST WE FORWARD ALONG
@@ -442,10 +469,56 @@ int main(void) {
   // listener socket -- bind to port (80)?
   char port[10] = HTTP_PORT;
   int listener_fd = open_server_socket(NULL, port);
+  outfile.open("proxy.log");
+  /*-----------------------become daemon-----------------------*/
+  // BEGIN_REF - http://www.netzmafia.de/skripten/unix/linux-daemon-howto.html
+
+  pid_t pid, sid;
+
+  /* Fork off the parent process */
+  pid = fork();
+  if (pid < 0) {
+    outfile << "exiting in pid < 0" << endl;
+    exit(EXIT_FAILURE);
+  }
+  /* If we got a good PID, then
+     we can exit the parent process. */
+  if (pid > 0) {
+    exit(EXIT_SUCCESS);
+  }
+
+  /* Change the file mode mask */
+  umask(0);
+
+  /* Open any logs here */
+
+  /* Create a new SID for the child process */
+  sid = setsid();
+  if (sid < 0) {
+    /* Log any failures here */
+    exit(EXIT_FAILURE);
+  }
+
+  /* Change the current working directory */
+  // if ((chdir("/")) < 0) {
+  /* Log any failures here */
+  //  exit(EXIT_FAILURE);
+  //}
+
+  /* Close out the standard file descriptors */
+  close(STDIN_FILENO);
+  close(STDOUT_FILENO);
+  close(STDERR_FILENO);
+
+  /* Daemon-specific initialization goes here */
+
+  // END_REF
+  /*-----------------------------------------------------------*/
 
   struct sockaddr_storage user_addr;
   socklen_t user_addr_len = sizeof(user_addr);
   long user_fd;
+
   for (;;) { // daemon loop
 
     user_fd =
@@ -457,7 +530,7 @@ int main(void) {
       exit(-1);
     }
   } // END for(;;)--and you thought it would never end!
-
+  outfile.close();
   return EXIT_SUCCESS;
   // sleep(30); /* wait 30 seconds */
 }
