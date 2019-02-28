@@ -6,7 +6,7 @@ CCFLAGS=-ggdb3 -Wall -Werror -pedantic -std=c++11 -pthread
 
 all: $(TARGETS)
 
-proxy_daemon: proxy_daemon.cpp cache.h HTTPrequest.h HTTPresponse.h
+proxy_daemon: proxy_daemon.cpp cache.h HTTPrequest.h HTTPresponse.h proxy_daemon.h
 	$(CC) $(CCFLAGS) -o $@ $<
 
 cache: cache.cpp cache.h
