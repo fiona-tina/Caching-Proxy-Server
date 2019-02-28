@@ -101,6 +101,8 @@ bool is_fresh(HTTPrequest request_obj) {
   if (difftime(time(NULL), req_time) < max_age) {
     return true;
   }
+  cout << myID << ": in cache, but expired at " << request_obj.get_field_value("EXPIRES") << endl;
+	
 
   return false; // change;
 }
@@ -147,7 +149,7 @@ HTTPresponse validate(HTTPrequest request_obj) {
   // 304 ok -- return from cache
 
   // full response -- replace in cache
-
+  cout << myID << ": in cache, valid" << endl;
   return s_cache.response_cache[request_line]; // todo: fix
 }
 
@@ -173,7 +175,7 @@ HTTPresponse deal_with_cache(HTTPrequest request) {
     // if its not in the cache forward
     if (resp.size() == 0) {
       HTTPresponse response = forward(request);
-
+      cout << myID << ": not in cache" << endl;
       if (no_cache(response)) {
         return response;
       } else {
@@ -185,17 +187,19 @@ HTTPresponse deal_with_cache(HTTPrequest request) {
     else {
       // if not fresh validate
       if (!is_fresh(request)) {
-        return validate(request);
+	return validate(request);
       } else {
 
         // if we can check cache and its fresh and doesnt need validation send
         // back response
         if (!has_validate_tags(request)) {
-
+	  cout << myID << ": in cache, valid" << endl;
           HTTPresponse response = s_cache.response_cache[request.request_line];
           return response;
         } else {
           // use ETAG
+	  
+	  
           return validate(request);
         }
       }
@@ -234,7 +238,9 @@ HTTPrequest receive_request(int user_fd) {
   // cout << request_obj.get_field_value("CONNECTION") << endl;
   // cout << request_obj.get_field_value("CACHE-CONTROL") << endl;
   request_obj.set_fields();
+  time_t now = time(0);
 
+  cout << myID << ": \"" << request_obj.request_line << "\" from " << request_obj.server << " @ " << ctime(&now) << endl;
   int content_len = request_obj.get_content_length();
   if (content_len >= 0) {
     // cout << "len = " << content_len << endl;
