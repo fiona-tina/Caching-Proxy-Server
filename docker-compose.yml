@@ -1,0 +1,13 @@
+version: '2'
+
+services:
+  
+  web:
+      build: ./server
+      command: bash -c "make && ./start"
+      volumes:
+        - ./logs:/var/log/erss
+      expose:
+        - "12345"
+      ports:
+        - "12345:12345"
