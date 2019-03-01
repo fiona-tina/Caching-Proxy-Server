@@ -1,36 +1,60 @@
-0: "GET http://people.duke.edu/~bmr23/ece568/class.html HTTP/1.1" from people.duke.edu @ Thu Feb 28 23:56:21 2019
+0: "GET http://people.duke.edu/~bmr23/ece568/homework/hw3/hw3.pdf HTTP/1.1" from people.duke.edu @ Fri Mar  1 00:06:42 2019
 
 0: not in cache
-1: "GET http://people.duke.edu/~bmr23/style.css HTTP/1.1" from people.duke.edu @ Thu Feb 28 23:56:22 2019
+1: "GET http://people.duke.edu/~bmr23/ece568/homework/hw3/hw3.pdf HTTP/1.1" from people.duke.edu @ Fri Mar  1 00:06:46 2019
 
-1: not in cache
-2: "GET http://people.duke.edu/~bmr23/ece568/class.html HTTP/1.1" from people.duke.edu @ Thu Feb 28 23:56:23 2019
+1: HIT in cache
+2: "CONNECT getpocket.cdn.mozilla.net:443 HTTP/1.1" from getpocket.cdn.mozilla.net @ Fri Mar  1 00:07:36 2019
 
-2: HIT in cache
-3: "GET http://people.duke.edu/~bmr23/style.css HTTP/1.1" from people.duke.edu @ Thu Feb 28 23:56:23 2019
+2: Responding "HTTP/1.1 200 Connection Established
+Connection: close
 
-3: HIT in cache
-4: "GET http://people.duke.edu/~bmr23/ece568/class.html HTTP/1.1" from people.duke.edu @ Thu Feb 28 23:56:24 2019
+"
+3: "CONNECT assets-cdn.github.com:443 HTTP/1.1" from assets-cdn.github.com @ Fri Mar  1 00:07:37 2019
 
-4: HIT in cache
-5: "GET http://people.duke.edu/~bmr23/style.css HTTP/1.1" from people.duke.edu @ Thu Feb 28 23:56:25 2019
+3: Responding "HTTP/1.1 200 Connection Established
+Connection: close
+
+"
+4: "GET http://people.duke.edu/~bmr23/ece568/syllabus.pdf HTTP/1.1" from people.duke.edu @ Fri Mar  1 00:08:12 2019
+
+4: not in cache
+5: "GET http://people.duke.edu/~bmr23/ece568/syllabus.pdf HTTP/1.1" from people.duke.edu @ Fri Mar  1 00:08:16 2019
 
 5: HIT in cache
-6: "GET http://people.duke.edu/~bmr23/ece568/class.html HTTP/1.1" from people.duke.edu @ Thu Feb 28 23:56:26 2019
+6: "GET http://people.duke.edu/~bmr23/ece568/class.html HTTP/1.1" from people.duke.edu @ Fri Mar  1 00:08:28 2019
 
-6: HIT in cache
-7: "GET http://people.duke.edu/~bmr23/style.css HTTP/1.1" from people.duke.edu @ Thu Feb 28 23:56:26 2019
+6: not in cache
+7: "GET http://people.duke.edu/~bmr23/style.css HTTP/1.1" from people.duke.edu @ Fri Mar  1 00:08:28 2019
 
-7: HIT in cache
-8: "GET http://people.duke.edu/~bmr23/ece568/class.html HTTP/1.1" from people.duke.edu @ Thu Feb 28 23:56:27 2019
+7: not in cache
+8: "GET http://people.duke.edu/~bmr23/ece568/class.html HTTP/1.1" from people.duke.edu @ Fri Mar  1 00:08:31 2019
 
 8: HIT in cache
-9: "GET http://people.duke.edu/~bmr23/style.css HTTP/1.1" from people.duke.edu @ Thu Feb 28 23:56:27 2019
+9: "GET http://people.duke.edu/~bmr23/style.css HTTP/1.1" from people.duke.edu @ Fri Mar  1 00:08:31 2019
 
 9: HIT in cache
-10: "GET http://people.duke.edu/~bmr23/ece568/class.html HTTP/1.1" from people.duke.edu @ Thu Feb 28 23:56:28 2019
+10: "GET http://people.duke.edu/~bmr23/ece568/class.html HTTP/1.1" from people.duke.edu @ Fri Mar  1 00:08:32 2019
 
 10: HIT in cache
-11: "GET http://people.duke.edu/~bmr23/style.css HTTP/1.1" from people.duke.edu @ Thu Feb 28 23:56:28 2019
+11: "GET http://people.duke.edu/~bmr23/style.css HTTP/1.1" from people.duke.edu @ Fri Mar  1 00:08:33 2019
 
 11: HIT in cache
+12: "GET http://people.duke.edu/~bmr23/ece568/class.html HTTP/1.1" from people.duke.edu @ Fri Mar  1 00:08:33 2019
+
+12: HIT in cache
+13: "GET http://people.duke.edu/~bmr23/style.css HTTP/1.1" from people.duke.edu @ Fri Mar  1 00:08:34 2019
+
+13: HIT in cache
+14: "GET http://people.duke.edu/~bmr23/ece568/class.html HTTP/1.1" from people.duke.edu @ Fri Mar  1 00:08:35 2019
+
+14: HIT in cache
+15: "GET http://people.duke.edu/~bmr23/style.css HTTP/1.1" from people.duke.edu @ Fri Mar  1 00:08:35 2019
+
+15: HIT in cache
+16: "GET http://people.duke.edu/~bmr23/ece568/class.html HTTP/1.1" from people.duke.edu @ Fri Mar  1 00:08:36 2019
+
+16: HIT in cache
+17: "GET http://people.duke.edu/~bmr23/style.css HTTP/1.1" from people.duke.edu @ Fri Mar  1 00:08:36 2019
+
+17: HIT in cache

@@ -63,13 +63,13 @@ int forward_connect(int fd1, int fd2) {
 
 void send_bad_request(int user_fd) {
   std::string buf = "400 Bad Request";
-  //  outfile << myID << ": Responding \"" << buf << endl;
+  outfile << myID << ": Responding \"" << buf << "\"" << endl;
   sendall(buf.c_str(), user_fd, buf.length());
 }
 
 void send_bad_gateway(int user_fd) {
   std::string buf = "502 Bad Gateway";
-  //  outfile << myID << ": Responding \"" << buf << endl;
+  outfile << myID << ": Responding \"" << buf << "\"" << endl;
   sendall(buf.c_str(), user_fd, buf.length());
 }
 
@@ -393,7 +393,7 @@ void openTunnel(const char *hostname, const char *port, int user_fd) {
   // ORIGIN SERVER
   string OK =
       "HTTP/1.1 200 Connection Established\r\nConnection: close\r\n\r\n";
-  //  outfile << myID << ": Responding \"" << OK << endl;
+  outfile << myID << ": Responding \"" << OK << "\"" << endl;
   sendall(OK.c_str(), user_fd, OK.length());
 
   while (1) {
@@ -410,7 +410,6 @@ void openTunnel(const char *hostname, const char *port, int user_fd) {
       if (rec_size == -1 || rec_size == 0) {
         break;
       }
-      //      outfile << myID << ": Responding \"" << v_buffer.data() << endl;
       sendall(v_buffer.data(), serverfd, rec_size);
     }
     if (FD_ISSET(serverfd, &read_fds)) {
@@ -421,7 +420,6 @@ void openTunnel(const char *hostname, const char *port, int user_fd) {
       if (rec_size == -1 || rec_size == 0) {
         break;
       }
-      //      outfile << myID << ": Responding \"" << v_buffer.data() << endl;
       sendall(v_buffer.data(), user_fd, rec_size);
     }
   }
