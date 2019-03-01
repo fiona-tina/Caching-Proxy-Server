@@ -61,6 +61,18 @@ int forward_connect(int fd1, int fd2) {
 }
 */
 
+void send_bad_request(int user_fd) {
+  std::string buf = "400 Bad Request";
+  //  outfile << myID << ": Responding \"" << buf << endl;
+  sendall(buf.c_str(), user_fd, buf.length());
+}
+
+void send_bad_gateway(int user_fd) {
+  std::string buf = "502 Bad Gateway";
+  //  outfile << myID << ": Responding \"" << buf << endl;
+  sendall(buf.c_str(), user_fd, buf.length());
+}
+
 bool no_cache(HTTPrequest request_obj) {
 
   string cc = request_obj.get_field_value("CACHE-CONTROL");
@@ -174,8 +186,6 @@ HTTPresponse deal_with_cache(HTTPrequest request) {
     // check cache
     std::vector<char> resp = s_cache.lookup(request.request_line);
 
-    outfile << myID << ": in cache:" << resp << endl;
-
     // if its not in the cache forward
     if (resp.size() == 0) {
 
@@ -190,13 +200,9 @@ HTTPresponse deal_with_cache(HTTPrequest request) {
       //   return response;
       // } else {
       pthread_mutex_lock(&cache_lock);
-      outfile << myID << ": inserting \"" << request.request_line << ": "
-              << resp << "\" into cache" << endl;
+
       s_cache.insert(request.request_line, response.response_buffer, request,
                      response);
-
-      outfile << myID << ": after insert in cache "
-              << s_cache.lookup(request.request_line) << endl;
 
       pthread_mutex_unlock(&cache_lock);
       return response;
@@ -206,6 +212,8 @@ HTTPresponse deal_with_cache(HTTPrequest request) {
     else {
       outfile << myID << ": HIT in cache" << endl;
       cout << myID << ": HIT in cache" << endl;
+      HTTPresponse response = s_cache.response_cache[request.request_line];
+      return response;
 
       // if not fresh validate
       if (!is_fresh(request)) {
@@ -385,6 +393,7 @@ void openTunnel(const char *hostname, const char *port, int user_fd) {
   // ORIGIN SERVER
   string OK =
       "HTTP/1.1 200 Connection Established\r\nConnection: close\r\n\r\n";
+  //  outfile << myID << ": Responding \"" << OK << endl;
   sendall(OK.c_str(), user_fd, OK.length());
 
   while (1) {
@@ -401,6 +410,7 @@ void openTunnel(const char *hostname, const char *port, int user_fd) {
       if (rec_size == -1 || rec_size == 0) {
         break;
       }
+      //      outfile << myID << ": Responding \"" << v_buffer.data() << endl;
       sendall(v_buffer.data(), serverfd, rec_size);
     }
     if (FD_ISSET(serverfd, &read_fds)) {
@@ -411,6 +421,7 @@ void openTunnel(const char *hostname, const char *port, int user_fd) {
       if (rec_size == -1 || rec_size == 0) {
         break;
       }
+      //      outfile << myID << ": Responding \"" << v_buffer.data() << endl;
       sendall(v_buffer.data(), user_fd, rec_size);
     }
   }
@@ -468,7 +479,8 @@ void *process_request(void *uid) {
       //   response_obj = receive_response(server_fd);
       //   std::vector<char> response = response_obj.response_buffer;
       // }
-
+      // outfile << myID << ": Responding \""
+      //         << response_obj.response_buffer.data() << endl;
       sendall(response_obj.response_buffer.data(), user_fd,
               response_obj.response_buffer.size());
 

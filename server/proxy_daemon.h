@@ -198,16 +198,6 @@ size_t str_to_num(const char *str) {
   return val;
 }
 
-void send_bad_request(int user_fd) {
-  std::string buf = "400 Bad Request";
-  sendall(buf.c_str(), user_fd, buf.length());
-}
-
-void send_bad_gateway(int user_fd) {
-  std::string buf = "502 Bad Gateway";
-  sendall(buf.c_str(), user_fd, buf.length());
-}
-
 // BEGIN_REF - https://www.techiedelight.com/print-vector-cpp/
 std::ostream &operator<<(std::ostream &os, const std::vector<char> &input) {
   for (auto const &i : input) {
