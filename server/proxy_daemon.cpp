@@ -168,18 +168,19 @@ string build_validation_req(string request_line, string etag,
 
 HTTPresponse deal_with_cache(HTTPrequest request) {
 
-  if (no_cache(request)) { // no_cache boolean
+  if (no_cache(request) || (request.http_method != "GET")) { // no_cache boolean
     return forward(request);
-
   } else {
     // check cache
     std::vector<char> resp = s_cache.lookup(request.request_line);
+
+    outfile << myID << ": in cache:" << resp << endl;
 
     // if its not in the cache forward
     if (resp.size() == 0) {
 
       outfile << myID << ": not in cache" << endl;
-      cout << myID << ": not in cache" << endl;
+      //      cout << myID << ": not in cache" << endl;
 
       // cout << "Cache\n" << endl;
       // s_cache.print();
@@ -189,7 +190,14 @@ HTTPresponse deal_with_cache(HTTPrequest request) {
       //   return response;
       // } else {
       pthread_mutex_lock(&cache_lock);
-      s_cache.insert(request.request_line, resp, request, response);
+      outfile << myID << ": inserting \"" << request.request_line << ": "
+              << resp << "\" into cache" << endl;
+      s_cache.insert(request.request_line, response.response_buffer, request,
+                     response);
+
+      outfile << myID << ": after insert in cache "
+              << s_cache.lookup(request.request_line) << endl;
+
       pthread_mutex_unlock(&cache_lock);
       return response;
       // }
@@ -443,15 +451,23 @@ void *process_request(void *uid) {
     if (request_obj.http_method == "GET" || request_obj.http_method == "POST") {
       // FORWARD REQUEST MAYBE JUST TAKE THE REQUEST???
 
-      HTTPresponse response_obj = deal_with_cache(request_obj);
+      if (request_obj.bad_request) {
+        send_bad_request(user_fd);
+        pthread_exit(NULL);
+      }
+      HTTPresponse response_obj;
+      //      if (request_obj.http_method == "GET") {
+      response_obj = deal_with_cache(request_obj);
+      //      }
 
-      /*
-      int server_fd = forward_request(request_obj.server.c_str(), port.c_str(),
-                                      request_obj.request_buffer.data());
+      // else {
+      //   int server_fd =
+      //       forward_request(request_obj.server.c_str(), port.c_str(),
+      //                       request_obj.request_buffer.data());
 
-      HTTPresponse response_obj = receive_response(server_fd);
-      std::vector<char> response = response_obj.response_buffer;
-      */
+      //   response_obj = receive_response(server_fd);
+      //   std::vector<char> response = response_obj.response_buffer;
+      // }
 
       sendall(response_obj.response_buffer.data(), user_fd,
               response_obj.response_buffer.size());

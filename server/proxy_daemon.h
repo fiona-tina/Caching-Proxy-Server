@@ -5,7 +5,6 @@
  * Prathikshaa Rangarajan (pr109), Rijish Ganguly (rg239), David Laub (dgl9)
  */
 
-
 #ifndef __PROXY_H_
 #define __PROXY_H_
 
@@ -48,6 +47,8 @@ int open_server_socket(char *hostname, char *port);
 int open_client_socket(const char *hostname, const char *port);
 int sendall(const char *buff, int fd, int size);
 
+void send_bad_request(int user_fd);
+
 /*----------------------implementations-------------------*/
 
 int open_server_socket(char *hostname, char *port) {
@@ -84,7 +85,7 @@ int open_server_socket(char *hostname, char *port) {
     int status = ::bind(fd, rm_it->ai_addr, rm_it->ai_addrlen);
 
     if (status == 0) {
-      //std::cout << "Successfully bound to port " << port << std::endl; // log
+      // std::cout << "Successfully bound to port " << port << std::endl; // log
       break;
     }
 
@@ -109,7 +110,7 @@ int open_server_socket(char *hostname, char *port) {
 }
 
 int open_client_socket(const char *hostname, const char *port) {
-  //cout << hostname << " " << port << endl;
+  // cout << hostname << " " << port << endl;
   int fd;
   int status;
   struct addrinfo hints;
@@ -196,5 +197,24 @@ size_t str_to_num(const char *str) {
 
   return val;
 }
+
+void send_bad_request(int user_fd) {
+  std::string buf = "400 Bad Request";
+  sendall(buf.c_str(), user_fd, buf.length());
+}
+
+void send_bad_gateway(int user_fd) {
+  std::string buf = "502 Bad Gateway";
+  sendall(buf.c_str(), user_fd, buf.length());
+}
+
+// BEGIN_REF - https://www.techiedelight.com/print-vector-cpp/
+std::ostream &operator<<(std::ostream &os, const std::vector<char> &input) {
+  for (auto const &i : input) {
+    os << i;
+  }
+  return os;
+}
+// END_REF
 
 #endif
