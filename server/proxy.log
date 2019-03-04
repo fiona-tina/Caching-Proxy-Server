@@ -58,3 +58,45 @@ Connection: close
 17: "GET http://people.duke.edu/~bmr23/style.css HTTP/1.1" from people.duke.edu @ Fri Mar  1 00:08:36 2019
 
 17: HIT in cache
+18: "CONNECT www.google.com:443 HTTP/1.1" from www.google.com @ Fri Mar  1 00:10:18 2019
+
+18: Responding "HTTP/1.1 200 Connection Established
+Connection: close
+
+"
+19: "CONNECT collector.githubapp.com:443 HTTP/1.1" from collector.githubapp.com @ Fri Mar  1 00:10:22 2019
+
+19: Responding "HTTP/1.1 200 Connection Established
+Connection: close
+
+"
+20: "CONNECT github.com:443 HTTP/1.1" from github.com @ Fri Mar  1 00:10:26 2019
+
+20: Responding "HTTP/1.1 200 Connection Established
+Connection: close
+
+"
+21: "CONNECT github.githubassets.com:443 HTTP/1.1" from github.githubassets.com @ Fri Mar  1 00:10:27 2019
+
+23: "CONNECT github.githubassets.com:443 HTTP/1.1" from github.githubassets.com @ Fri Mar  1 00:10:27 2019
+
+25: "CONNECT github.githubassets.com:443 HTTP/1.1" from github.githubassets.com @ Fri Mar  1 00:10:27 2019
+
+21: Responding "HTTP/1.1 200 Connection Established
+Connection: close
+
+"
+23: Responding "HTTP/1.1 200 Connection Established
+Connection: close
+
+"
+25: Responding "HTTP/1.1 200 Connection Established
+Connection: close
+
+"
+27: "CONNECT avatars0.githubusercontent.com:443 HTTP/1.1" from avatars0.githubusercontent.com @ Fri Mar  1 00:10:54 2019
+
+27: Responding "HTTP/1.1 200 Connection Established
+Connection: close
+
+"
